@@ -26,8 +26,10 @@ public class Patient {
     @Column(nullable = false)
     private Boolean insurance;
 
-    @Column(nullable = false)
-    private Boolean subscription;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_subscription_plan")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patients", "services"})
+    private SubscriptionPlan activeSubscription;
 
     @Column(nullable = false)
     private Integer age;
@@ -70,12 +72,12 @@ public class Patient {
         this.insurance = insurance;
     }
 
-    public Boolean getSubscription() {
-        return subscription;
+    public SubscriptionPlan getActiveSubscription() {
+        return activeSubscription;
     }
 
-    public void setSubscription(final Boolean subscription) {
-        this.subscription = subscription;
+    public void setActiveSubscription(SubscriptionPlan activeSubscription) {
+        this.activeSubscription = activeSubscription;
     }
 
     public Integer getAge() {
