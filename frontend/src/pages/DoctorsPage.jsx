@@ -109,7 +109,9 @@ export default function DoctorsPage() {
             {editId ? `Editare Doctor #${editId}` : 'Adăugare Doctor Nou'}
           </h3>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-600">Cabinet / Oficiu</label>
+            <label className="text-sm font-semibold text-gray-600">
+              Cabinet / Oficiu <span className="text-blue-600">*</span>
+            </label>
             <input 
               type="text" 
               required
@@ -121,7 +123,9 @@ export default function DoctorsPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-600">Zile Concediu (PTO)</label>
+            <label className="text-sm font-semibold text-gray-600">
+              Zile Concediu (PTO) <span className="text-blue-600">*</span>
+            </label>
             <input 
               type="number" 
               required
@@ -132,7 +136,9 @@ export default function DoctorsPage() {
             />
           </div>
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-sm font-semibold text-gray-600">Serviciu Medical / Specializare</label>
+            <label className="text-sm font-semibold text-gray-600">
+              Specializare / Serviciu Medical <span className="text-blue-600">*</span>
+            </label>
             <select 
               required
               disabled={saving}

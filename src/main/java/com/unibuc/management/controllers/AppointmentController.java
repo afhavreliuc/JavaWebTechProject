@@ -123,4 +123,50 @@ public class AppointmentController {
 
         return ResponseEntity.ok("Feedback submitted successfully.");
     }
+
+    @DeleteMapping("/{appointmentId}")
+    public ResponseEntity<Void> deleteAppointment(@PathVariable Integer appointmentId) {
+        if (appointmentService.findById(appointmentId).isPresent()) {
+            appointmentService.deleteAppointment(appointmentId);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{appointmentId}")
+    public ResponseEntity<?> updateAppointment(@PathVariable Integer appointmentId,
+                                               @RequestParam String appointmentFrom) {
+        try {
+            OffsetDateTime newTime = OffsetDateTime.parse(appointmentFrom);
+            Optional<Appointment> appointmentOpt = appointmentService.findById(appointmentId);
+            
+            if (appointmentOpt.isPresent()) {
+                Appointment appointment = appointmentOpt.get();
+
+                List<OffsetDateTime> availableSlots = appointmentService.getAvailableTimeSlots(
+                        appointment.getMedicalService(),
+                        newTime.toLocalDate().toString()
+                );
+
+                boolean isCurrentSlot = appointment.getAppointmentFrom().toInstant().equals(newTime.toInstant());
+                boolean isAvailable = availableSlots.stream()
+                        .anyMatch(slot -> slot.toInstant().equals(newTime.toInstant()));
+
+                if (!isAvailable && !isCurrentSlot) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Intervalul orar selectat nu este disponibil.");
+                }
+
+                appointment.setAppointmentFrom(newTime);
+                Appointment updated = appointmentService.save(appointment);
+                return ResponseEntity.ok(updated);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Format dată invalid sau eroare la procesare: " + e.getMessage());
+        }
+    }
 }

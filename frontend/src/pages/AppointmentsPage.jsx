@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { patientService, medicalServiceService, appointmentService } from '../services/api';
-import { Calendar, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, AlertCircle, Edit2, Trash2 } from 'lucide-react';
 
 export default function AppointmentsPage() {
   const [patients, setPatients] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [patientAppointments, setPatientAppointments] = useState([]);
+  const [editingAppointment, setEditingAppointment] = useState(null);
   
   const [bookingMode, setBookingMode] = useState(false);
   const [bookingData, setBookingData] = useState({
@@ -16,6 +17,7 @@ export default function AppointmentsPage() {
   });
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
@@ -53,14 +55,14 @@ export default function AppointmentsPage() {
     }
   };
 
-  const handleFetchSlots = async () => {
-    if (!bookingData.medicalServiceId || !bookingData.date) return;
+  const handleFetchSlots = async (serviceId, date) => {
+    const sId = serviceId || bookingData.medicalServiceId;
+    const d = date || bookingData.date;
+    if (!sId || !d) return;
     setLoadingSlots(true);
+    setSearchPerformed(true);
     try {
-      const res = await appointmentService.getAvailableSlots(
-        bookingData.medicalServiceId, 
-        bookingData.date
-      );
+      const res = await appointmentService.getAvailableSlots(sId, d);
       setAvailableSlots(res.data);
     } catch (error) {
       console.error('Error fetching slots:', error);
@@ -69,19 +71,54 @@ export default function AppointmentsPage() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Ești sigur că vrei să ștergi această programare?')) return;
+    try {
+      await appointmentService.delete(id);
+      setMessage({ type: 'success', text: 'Programare ștearsă cu succes!' });
+      fetchPatientAppointments(selectedPatientId);
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      setMessage({ type: 'error', text: 'Eroare la ștergerea programării.' });
+    }
+  };
+
+  const handleEditClick = (appt) => {
+    setEditingAppointment(appt);
+    setBookingData({
+      medicalServiceId: appt.medicalService.id,
+      date: new Date(appt.appointmentFrom).toISOString().split('T')[0],
+      timeSlot: appt.appointmentFrom
+    });
+    setBookingMode(true);
+    handleFetchSlots(appt.medicalService.id, new Date(appt.appointmentFrom).toISOString().split('T')[0]);
+  };
+
   const handleBook = async () => {
     if (!selectedPatientId || !bookingData.timeSlot) return;
     try {
-      await appointmentService.create({
-        patientId: selectedPatientId,
-        medicalServiceId: bookingData.medicalServiceId,
-        appointmentFrom: bookingData.timeSlot
-      });
-      setMessage({ type: 'success', text: 'Programare creată cu succes!' });
+      if (editingAppointment) {
+        await appointmentService.update(editingAppointment.id, bookingData.timeSlot);
+        setMessage({ type: 'success', text: 'Programare actualizată cu succes!' });
+      } else {
+        await appointmentService.create({
+          patientId: selectedPatientId,
+          medicalServiceId: bookingData.medicalServiceId,
+          appointmentFrom: bookingData.timeSlot
+        });
+        setMessage({ type: 'success', text: 'Programare creată cu succes!' });
+      }
       setBookingMode(false);
+      setEditingAppointment(null);
+      setSearchPerformed(false);
       fetchPatientAppointments(selectedPatientId);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Eroare la crearea programării. Slotul s-ar putea să nu mai fie disponibil.' });
+      console.error('Error booking/updating appointment:', error);
+      const backendError = typeof error.response?.data === 'string' ? error.response.data : null;
+      setMessage({ 
+        type: 'error', 
+        text: backendError || (editingAppointment ? 'Eroare la actualizarea programării.' : 'Eroare la crearea programării. Slotul s-ar putea să nu mai fie disponibil.') 
+      });
     }
   };
 
@@ -109,7 +146,9 @@ export default function AppointmentsPage() {
         )}
 
         <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
-          <label className="block text-sm font-bold text-indigo-900 mb-2">Selectează Pacientul</label>
+          <label className="block text-sm font-bold text-indigo-900 mb-2">
+            Selectează Pacientul <span className="text-blue-600">*</span>
+          </label>
           <select 
             className="w-full border-none rounded-lg p-3 shadow-sm bg-white focus:ring-2 focus:ring-indigo-500"
             value={selectedPatientId}
@@ -136,30 +175,46 @@ export default function AppointmentsPage() {
 
             {bookingMode ? (
               <div className="bg-gray-50 p-6 rounded-xl border-2 border-dashed border-indigo-200 animate-in fade-in slide-in-from-top-4 duration-300">
+                <h4 className="text-lg font-bold text-indigo-900 mb-4">
+                  {editingAppointment ? `Editare Programare #${editingAppointment.id}` : 'Programare Nouă'}
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-600 mb-2">Serviciu Medical</label>
+                    <label className="block text-sm font-semibold text-gray-600 mb-2">
+                      Serviciu Medical <span className="text-blue-600">*</span>
+                    </label>
                     <select 
-                      className="w-full border p-3 rounded-lg bg-white"
+                      className="w-full border p-3 rounded-lg bg-white disabled:bg-gray-100"
                       value={bookingData.medicalServiceId}
-                      onChange={(e) => setBookingData({...bookingData, medicalServiceId: e.target.value})}
+                      onChange={(e) => {
+                        setBookingData({...bookingData, medicalServiceId: e.target.value});
+                        setSearchPerformed(false);
+                        setAvailableSlots([]);
+                      }}
+                      disabled={!!editingAppointment}
                     >
                       <option value="">Alege serviciu...</option>
                       {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-600 mb-2">Data</label>
+                    <label className="block text-sm font-semibold text-gray-600 mb-2">
+                      Data <span className="text-blue-600">*</span>
+                    </label>
                     <div className="flex gap-2">
                       <input 
                         type="date" 
                         className="flex-1 border p-3 rounded-lg"
                         value={bookingData.date}
                         min={new Date().toISOString().split('T')[0]}
-                        onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                        onChange={(e) => {
+                          setBookingData({...bookingData, date: e.target.value});
+                          setSearchPerformed(false);
+                          setAvailableSlots([]);
+                        }}
                       />
                       <button 
-                        onClick={handleFetchSlots}
+                        onClick={() => handleFetchSlots()}
                         className="bg-gray-800 text-white px-4 rounded-lg hover:bg-black"
                       >
                         Caută Sloturi
@@ -170,10 +225,34 @@ export default function AppointmentsPage() {
 
                 {loadingSlots && <p className="mt-4 text-center text-indigo-600 font-medium">Se caută sloturi libere...</p>}
 
-                {availableSlots.length > 0 && (
+                {searchPerformed && !loadingSlots && availableSlots.length === 0 && !editingAppointment && (
+                  <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-3 text-orange-700">
+                    <AlertCircle size={20} />
+                    <p className="font-medium">Nu mai sunt sloturi disponibile pentru această dată. Te rugăm să alegi altă zi.</p>
+                  </div>
+                )}
+
+                {(availableSlots.length > 0 || (editingAppointment && new Date(editingAppointment.appointmentFrom).toISOString().split('T')[0] === bookingData.date)) && (
                   <div className="mt-6">
-                    <label className="block text-sm font-semibold text-gray-600 mb-3">Sloturi disponibile</label>
+                    <label className="block text-sm font-semibold text-gray-600 mb-3">
+                      Sloturi disponibile <span className="text-blue-600">*</span>
+                    </label>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {editingAppointment && 
+                       new Date(editingAppointment.appointmentFrom).toISOString().split('T')[0] === bookingData.date && 
+                       !availableSlots.includes(editingAppointment.appointmentFrom) && (
+                        <button
+                          onClick={() => setBookingData({...bookingData, timeSlot: editingAppointment.appointmentFrom})}
+                          className={`p-3 rounded-lg text-sm font-medium transition-all ${
+                            bookingData.timeSlot === editingAppointment.appointmentFrom 
+                            ? 'bg-indigo-600 text-white ring-4 ring-indigo-200' 
+                            : 'bg-white border border-indigo-200 text-indigo-700'
+                          }`}
+                        >
+                          {new Date(editingAppointment.appointmentFrom).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                          <span className="block text-[10px] opacity-75">(Curent)</span>
+                        </button>
+                      )}
                       {availableSlots.map((slot) => (
                         <button
                           key={slot}
@@ -193,7 +272,7 @@ export default function AppointmentsPage() {
 
                 <div className="mt-8 flex justify-end gap-3">
                   <button 
-                    onClick={() => {setBookingMode(false); setAvailableSlots([]);}}
+                    onClick={() => {setBookingMode(false); setEditingAppointment(null); setAvailableSlots([]); setSearchPerformed(false);}}
                     className="px-6 py-2 text-gray-600 font-semibold hover:bg-gray-200 rounded-full"
                   >
                     Renunță
@@ -203,14 +282,14 @@ export default function AppointmentsPage() {
                     disabled={!bookingData.timeSlot}
                     className="px-8 py-2 bg-indigo-600 text-white font-bold rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700"
                   >
-                    Confirmă Programarea
+                    {editingAppointment ? 'Salvează Modificările' : 'Confirmă Programarea'}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 {patientAppointments.map((appt) => (
-                  <div key={appt.id} className="bg-white p-4 rounded-xl border flex items-center justify-between hover:shadow-sm">
+                  <div key={appt.id} className="bg-white p-4 rounded-xl border flex items-center justify-between hover:shadow-sm group">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full">
                         <Clock size={24} />
@@ -220,7 +299,7 @@ export default function AppointmentsPage() {
                         <p className="text-sm text-gray-500">{formatDateTime(appt.appointmentFrom)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                       <div className="text-right">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                           appt.status === 'Completed' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-700'
@@ -229,6 +308,25 @@ export default function AppointmentsPage() {
                         </span>
                         <p className="text-xs text-gray-400 mt-1">ID: #{appt.id}</p>
                       </div>
+                      
+                      {appt.status !== 'Completed' && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleEditClick(appt)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                            title="Editează"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(appt.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                            title="Șterge"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

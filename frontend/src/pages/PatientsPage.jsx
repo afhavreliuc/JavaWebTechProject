@@ -129,7 +129,9 @@ export default function PatientsPage() {
             {editId ? `Editare Pacient #${editId}` : 'Adăugare Pacient Nou'}
           </h3>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-600">Nume Complet</label>
+            <label className="text-sm font-semibold text-gray-600">
+              Nume Complet <span className="text-blue-600">*</span>
+            </label>
             <input 
               type="text" 
               required
@@ -140,7 +142,9 @@ export default function PatientsPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-600">Vârstă</label>
+            <label className="text-sm font-semibold text-gray-600">
+              Vârstă <span className="text-blue-600">*</span>
+            </label>
             <input 
               type="number" 
               required

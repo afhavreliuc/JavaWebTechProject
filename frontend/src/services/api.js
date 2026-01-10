@@ -32,6 +32,8 @@ export const appointmentService = {
   getByPatientId: (patientId) => api.get(`/appointments/patient/${patientId}`),
   submitFeedback: (appointmentId, rating) => 
     api.post(`/appointments/${appointmentId}/feedback`, null, { params: { rating } }),
+  delete: (id) => api.delete(`/appointments/${id}`),
+  update: (id, appointmentFrom) => api.put(`/appointments/${id}`, null, { params: { appointmentFrom } }),
 };
 
 export const propagationService = {
