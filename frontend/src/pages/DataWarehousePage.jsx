@@ -44,7 +44,7 @@ export default function DataWarehousePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">

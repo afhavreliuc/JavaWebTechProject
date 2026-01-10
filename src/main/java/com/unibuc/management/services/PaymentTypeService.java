@@ -43,7 +43,7 @@ public class PaymentTypeService {
                 return paymentType;// Return the insurance price
             }
 
-            if (patient.getSubscription()) {
+            if (patient.getActiveSubscription() != null) {
                 Optional<PaymentType> paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(),false, true);  // Return the insurance price
                 return paymentType;
             }

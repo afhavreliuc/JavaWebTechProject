@@ -3,6 +3,7 @@ package com.unibuc.management.services;
 import com.unibuc.management.entities.MedicalService;
 import com.unibuc.management.entities.Patient;
 import com.unibuc.management.entities.PaymentType;
+import com.unibuc.management.entities.SubscriptionPlan;
 import com.unibuc.management.repositories.PaymentTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class PaymentTypeServiceTest {
         patient.setId(1);
         patient.setName("John Doe");
         patient.setInsurance(true);
-        patient.setSubscription(false);
+        patient.setActiveSubscription(null);
 
         paymentType = new PaymentType();
         paymentType.setId(1);
@@ -106,7 +107,7 @@ class PaymentTypeServiceTest {
     void testGetPriceForPatient_WithSubscription() {
         // Test when patient has subscription but no insurance
         patient.setInsurance(false);
-        patient.setSubscription(true);
+        patient.setActiveSubscription(new SubscriptionPlan());
 
         when(medicalServiceService.getMedicalServiceById(1)).thenReturn(Optional.of(medicalService));
         when(patientService.getPatientById(1)).thenReturn(Optional.of(patient));
@@ -129,7 +130,7 @@ class PaymentTypeServiceTest {
     void testGetPriceForPatient_NoInsuranceNoSubscription() {
         // Test when patient has neither insurance nor subscription
         patient.setInsurance(false);
-        patient.setSubscription(false);
+        patient.setActiveSubscription(null);
 
         when(medicalServiceService.getMedicalServiceById(1)).thenReturn(Optional.of(medicalService));
         when(patientService.getPatientById(1)).thenReturn(Optional.of(patient));
