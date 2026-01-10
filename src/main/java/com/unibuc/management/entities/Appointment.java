@@ -2,6 +2,8 @@ package com.unibuc.management.entities;
 
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.OffsetDateTime;
 
@@ -32,6 +34,7 @@ public class Appointment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idPatient", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
     private Patient patient;
 

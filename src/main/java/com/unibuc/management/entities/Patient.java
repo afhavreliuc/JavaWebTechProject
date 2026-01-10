@@ -1,8 +1,6 @@
 package com.unibuc.management.entities;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 
 import java.util.Set;
@@ -10,7 +8,7 @@ import java.util.Set;
 
 @Entity
 @Access(AccessType.FIELD)
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Patient {
 
     @Id
@@ -38,7 +36,7 @@ public class Patient {
     @Column(nullable = false)
     private Boolean sex;
 
-    @OneToMany(mappedBy = "patient")
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Appointment> patientAppointments;
 
     public Integer getId() {

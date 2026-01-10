@@ -6,6 +6,7 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [formData, setFormData] = useState({
@@ -14,7 +15,7 @@ export default function PatientsPage() {
     medicalRecord: '',
     insurance: false,
     subscription: false,
-    sex: true // true for Male, false for Female (based on Entity Boolean sex)
+    sex: true
   });
 
   const fetchPatients = async () => {
@@ -32,12 +33,25 @@ export default function PatientsPage() {
     fetchPatients();
   }, []);
 
+  const handleEdit = (patient) => {
+    setEditId(patient.id);
+    setFormData({
+      name: patient.name,
+      age: patient.age.toString(),
+      medicalRecord: patient.medicalRecord || '',
+      insurance: patient.insurance,
+      subscription: !!patient.activeSubscription,
+      sex: patient.sex
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
     try {
-      // Create a clean payload that matches the backend Patient entity
       const payload = {
         name: formData.name,
         age: parseInt(formData.age),
@@ -46,14 +60,20 @@ export default function PatientsPage() {
         sex: formData.sex
       };
 
-      await patientService.create(payload);
+      if (editId) {
+        await patientService.update(editId, payload);
+        setMessage({ type: 'success', text: 'Pacient actualizat cu succes!' });
+      } else {
+        await patientService.create(payload);
+        setMessage({ type: 'success', text: 'Pacient salvat cu succes!' });
+      }
       
-      setMessage({ type: 'success', text: 'Pacient salvat cu succes!' });
       setShowForm(false);
+      setEditId(null);
       setFormData({ name: '', age: '', medicalRecord: '', insurance: false, subscription: false, sex: true });
       fetchPatients();
     } catch (error) {
-      console.error('Error creating patient:', error);
+      console.error('Error saving patient:', error);
       setMessage({ 
         type: 'error', 
         text: error.response?.data?.message || 'Eroare la salvarea pacientului. Verificați dacă serverul este pornit.' 
@@ -79,11 +99,18 @@ export default function PatientsPage() {
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-gray-800">Gestionare Pacienți</h2>
         <button 
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm && editId) {
+              setEditId(null);
+              setFormData({ name: '', age: '', medicalRecord: '', insurance: false, subscription: false, sex: true });
+            } else {
+              setShowForm(!showForm);
+            }
+          }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
         >
           <UserPlus size={20} />
-          Adaugă Pacient
+          {editId ? 'Mod Nou Pacient' : 'Adaugă Pacient'}
         </button>
       </div>
 
@@ -97,7 +124,10 @@ export default function PatientsPage() {
       )}
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-gray-100">
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-indigo-100 ring-2 ring-indigo-500/10">
+          <h3 className="col-span-2 text-lg font-bold text-indigo-900 mb-2 border-b pb-2">
+            {editId ? `Editare Pacient #${editId}` : 'Adăugare Pacient Nou'}
+          </h3>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">Nume Complet</label>
             <input 
@@ -213,7 +243,12 @@ export default function PatientsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 flex gap-3">
-                    <button className="text-indigo-600 hover:text-indigo-900"><Edit2 size={18} /></button>
+                    <button 
+                      onClick={() => handleEdit(patient)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      <Edit2 size={18} />
+                    </button>
                     <button 
                       onClick={() => handleDelete(patient.id)}
                       className="text-red-600 hover:text-red-900"

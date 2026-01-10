@@ -38,8 +38,9 @@ public class PatientService {
     }
 
     public boolean deletePatient(Integer id) {
-        if (patientRepository.existsById(id)) {
-            patientRepository.deleteById(id);
+        Optional<Patient> patient = patientRepository.findById(id);
+        if (patient.isPresent()) {
+            patientRepository.delete(patient.get());
             return true;
         }
         return false;

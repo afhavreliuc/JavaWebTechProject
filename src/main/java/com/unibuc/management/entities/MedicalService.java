@@ -8,7 +8,6 @@ import java.util.Set;
 
 @Entity
 @Access(AccessType.FIELD)
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class MedicalService {
 
     @Id
@@ -35,7 +34,7 @@ public class MedicalService {
     private Integer nrOfRatings;
 
     @OneToMany(mappedBy = "medicalService")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "medicalService"})
     private Set<Doctor> medicalServiceDoctors;
 
     @OneToMany(mappedBy = "medicalService")
