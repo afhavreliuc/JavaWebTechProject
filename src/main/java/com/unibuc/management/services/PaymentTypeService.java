@@ -38,19 +38,21 @@ public class PaymentTypeService {
             MedicalService medicalService = medicalServiceOpt.get();
             Patient patient = patientOpt.get();
 
+            Optional<PaymentType> paymentType;
+
             if (patient.getInsurance()) {
-                Optional<PaymentType> paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(),true, false);
-                return paymentType;// Return the insurance price
+                paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), true, false);
+                if (paymentType.isPresent()) return paymentType;
             }
 
             if (patient.getActiveSubscription() != null) {
-                Optional<PaymentType> paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(),false, true);  // Return the insurance price
-                return paymentType;
+                paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), false, true);
+                if (paymentType.isPresent()) return paymentType;
             }
 
-            Optional<PaymentType> paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(),false, false);
-            return paymentType;
+            // Fallback to standard price
+            return paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), false, false);
         }
-        return null;
+        return Optional.empty();
     }
 }

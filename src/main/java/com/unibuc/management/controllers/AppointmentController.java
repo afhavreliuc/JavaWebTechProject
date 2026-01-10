@@ -53,10 +53,14 @@ public class AppointmentController {
                 appointment.setIsDoctor(true);
             }
 
-            Optional<PaymentType> paymentType = paymentTypeService.getPriceForPatient(medicalServiceId,patientId);
+            Optional<PaymentType> paymentTypeOpt = paymentTypeService.getPriceForPatient(medicalServiceId, patientId);
+            if (paymentTypeOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            }
+
             appointment.setPatient(patient);
             appointment.setMedicalService(medicalService);
-            appointment.setPayment(paymentType.get());
+            appointment.setPayment(paymentTypeOpt.get());
             appointment.setAppointmentFrom(appointmentFrom);
             appointment.setStatus("Appointed");
 

@@ -22,23 +22,34 @@ public class ManagementApplication {
 				MedicalService pedres = repository.save(createService("Pediatrie", "Pediatrie", 10, 18));
 				MedicalService neurores = repository.save(createService("Neurologie", "Neurologie", 8, 14));
 
-				paymentRepository.save(createPayment(cardiores, 200));
-				paymentRepository.save(createPayment(generalres, 100));
-				paymentRepository.save(createPayment(pedres, 150));
-				paymentRepository.save(createPayment(neurores, 250));
+				paymentRepository.save(createPayment(cardiores, 200, false, false));
+				paymentRepository.save(createPayment(cardiores, 150, true, false));
+				paymentRepository.save(createPayment(cardiores, 100, false, true));
 
-				System.out.println("Baza de date a fost populată cu servicii și prețuri implicite.");
+				paymentRepository.save(createPayment(generalres, 100, false, false));
+				paymentRepository.save(createPayment(generalres, 50, true, false));
+				paymentRepository.save(createPayment(generalres, 0, false, true));
+
+				paymentRepository.save(createPayment(pedres, 150, false, false));
+				paymentRepository.save(createPayment(pedres, 100, true, false));
+				paymentRepository.save(createPayment(pedres, 50, false, true));
+
+				paymentRepository.save(createPayment(neurores, 250, false, false));
+				paymentRepository.save(createPayment(neurores, 200, true, false));
+				paymentRepository.save(createPayment(neurores, 150, false, true));
+
+				System.out.println("Baza de date a fost populată cu servicii și prețuri (Standard, Asigurare, Abonament).");
 			}
 		};
 	}
 
-	private com.unibuc.management.entities.PaymentType createPayment(MedicalService service, int price) {
+	private com.unibuc.management.entities.PaymentType createPayment(MedicalService service, int price, boolean insurance, boolean subscription) {
 		com.unibuc.management.entities.PaymentType p = new com.unibuc.management.entities.PaymentType();
 		p.setMedicalService(service);
 		p.setPrice(java.math.BigDecimal.valueOf(price));
 		p.setIsDoctor(true);
-		p.setWithInsurance(false);
-		p.setWithSubscription(false);
+		p.setWithInsurance(insurance);
+		p.setWithSubscription(subscription);
 		return p;
 	}
 
