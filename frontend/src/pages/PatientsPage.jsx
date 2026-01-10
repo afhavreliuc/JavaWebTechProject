@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { patientService } from '../services/api';
-import { UserPlus, Trash2, Edit2 } from 'lucide-react';
+import { UserPlus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -32,16 +34,32 @@ export default function PatientsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setMessage(null);
     try {
-      await patientService.create({
-        ...formData,
-        age: parseInt(formData.age)
-      });
+      // Create a clean payload that matches the backend Patient entity
+      const payload = {
+        name: formData.name,
+        age: parseInt(formData.age),
+        medicalRecord: formData.medicalRecord,
+        insurance: formData.insurance,
+        sex: formData.sex
+      };
+
+      await patientService.create(payload);
+      
+      setMessage({ type: 'success', text: 'Pacient salvat cu succes!' });
       setShowForm(false);
       setFormData({ name: '', age: '', medicalRecord: '', insurance: false, subscription: false, sex: true });
       fetchPatients();
     } catch (error) {
       console.error('Error creating patient:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Eroare la salvarea pacientului. Verificați dacă serverul este pornit.' 
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -69,14 +87,24 @@ export default function PatientsPage() {
         </button>
       </div>
 
+      {message && (
+        <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 animate-in fade-in duration-300 ${
+          message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+          <p className="font-medium">{message.text}</p>
+        </div>
+      )}
+
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-gray-100">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">Nume Complet</label>
             <input 
               type="text" 
               required
-              className="border p-2 rounded-md"
+              disabled={saving}
+              className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
             />
@@ -86,7 +114,8 @@ export default function PatientsPage() {
             <input 
               type="number" 
               required
-              className="border p-2 rounded-md"
+              disabled={saving}
+              className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
               value={formData.age}
               onChange={(e) => setFormData({...formData, age: e.target.value})}
             />
@@ -94,7 +123,8 @@ export default function PatientsPage() {
           <div className="flex flex-col gap-1 col-span-2">
             <label className="text-sm font-semibold text-gray-600">Istoric Medical</label>
             <textarea 
-              className="border p-2 rounded-md h-24"
+              disabled={saving}
+              className="border p-2 rounded-md h-24 focus:ring-2 focus:ring-indigo-500 outline-none"
               value={formData.medicalRecord}
               onChange={(e) => setFormData({...formData, medicalRecord: e.target.value})}
             />
@@ -103,6 +133,7 @@ export default function PatientsPage() {
             <label className="flex items-center gap-2 cursor-pointer">
               <input 
                 type="checkbox" 
+                disabled={saving}
                 checked={formData.insurance}
                 onChange={(e) => setFormData({...formData, insurance: e.target.checked})}
               />
@@ -111,6 +142,7 @@ export default function PatientsPage() {
             <label className="flex items-center gap-2 cursor-pointer">
               <input 
                 type="checkbox" 
+                disabled={saving}
                 checked={formData.subscription}
                 onChange={(e) => setFormData({...formData, subscription: e.target.checked})}
               />
@@ -118,7 +150,8 @@ export default function PatientsPage() {
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <select 
-                className="border p-1 rounded"
+                disabled={saving}
+                className="border p-1 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={formData.sex ? 'true' : 'false'}
                 onChange={(e) => setFormData({...formData, sex: e.target.value === 'true'})}
               >
@@ -131,15 +164,22 @@ export default function PatientsPage() {
             <button 
               type="button" 
               onClick={() => setShowForm(false)}
-              className="text-gray-600 px-4 py-2 hover:bg-gray-100 rounded-lg"
+              disabled={saving}
+              className="text-gray-600 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Anulează
             </button>
             <button 
               type="submit" 
-              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+              disabled={saving}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
             >
-              Salvează
+              {saving ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  Se salvează...
+                </>
+              ) : 'Salvează'}
             </button>
           </div>
         </form>

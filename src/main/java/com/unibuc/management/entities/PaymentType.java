@@ -32,7 +32,6 @@ public class PaymentType {
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     @JoinColumn(name = "idMedicalService", nullable = false)
-    @JsonBackReference
     private MedicalService medicalService;
 
     @OneToMany(mappedBy = "payment")

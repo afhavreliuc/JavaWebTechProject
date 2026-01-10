@@ -26,7 +26,9 @@ export default function AppointmentsPage() {
           medicalServiceService.getAll()
         ]);
         setPatients(pRes.data);
-        setServices(sRes.data);
+        // Filtrăm doar serviciile care au cel puțin un doctor alocat
+        const servicesWithDoctors = sRes.data.filter(s => s.medicalServiceDoctors && s.medicalServiceDoctors.length > 0);
+        setServices(servicesWithDoctors);
       } catch (error) {
         console.error('Error fetching initial data:', error);
       }

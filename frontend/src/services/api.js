@@ -40,7 +40,7 @@ export const propagationService = {
 };
 
 export const medicalServiceService = {
-  getAll: () => api.get('http://localhost:8080/medical-services'), // Note the different path in your controller
+  getAll: () => api.get('/medical-services'),
 };
 
 export default api;

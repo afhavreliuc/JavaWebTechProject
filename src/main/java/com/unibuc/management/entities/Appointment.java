@@ -27,20 +27,17 @@ public class Appointment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idMedicalService", nullable = false)
-    @JsonManagedReference
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
     private MedicalService medicalService;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idPatient", nullable = false)
-    @JsonBackReference
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
     private Patient patient;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
     @JoinColumn(name = "idPayment", nullable = false)
-    @JsonManagedReference
     private PaymentType payment;
 
     public Integer getId() {
