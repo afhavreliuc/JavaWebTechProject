@@ -40,12 +40,12 @@ public class PaymentTypeService {
 
             Optional<PaymentType> paymentType;
 
-            if (patient.getInsurance()) {
+            if (patient.getInsuranceProvider() != null) {
                 paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), true, false);
                 if (paymentType.isPresent()) return paymentType;
             }
 
-            if (patient.getActiveSubscription() != null) {
+            if (patient.getSubscription() || patient.getActiveSubscription() != null) {
                 paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), false, true);
                 if (paymentType.isPresent()) return paymentType;
             }

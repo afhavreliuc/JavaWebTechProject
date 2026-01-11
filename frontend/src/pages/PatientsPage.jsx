@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { patientService } from '../services/api';
+import { patientService, insuranceProviderService } from '../services/api';
 import { UserPlus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState([]);
+  const [insuranceProviders, setInsuranceProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -13,7 +14,7 @@ export default function PatientsPage() {
     name: '',
     age: '',
     medicalRecord: '',
-    insurance: false,
+    insuranceProviderId: '',
     subscription: false,
     sex: true
   });
@@ -22,15 +23,27 @@ export default function PatientsPage() {
     try {
       const response = await patientService.getAll();
       setPatients(response.data);
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching patients:', error);
-      setLoading(false);
+    }
+  };
+
+  const fetchInsuranceProviders = async () => {
+    try {
+      const response = await insuranceProviderService.getAll();
+      setInsuranceProviders(response.data);
+    } catch (error) {
+      console.error('Error fetching insurance providers:', error);
     }
   };
 
   useEffect(() => {
-    fetchPatients();
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchPatients(), fetchInsuranceProviders()]);
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   const handleEdit = (patient) => {
@@ -39,8 +52,8 @@ export default function PatientsPage() {
       name: patient.name,
       age: patient.age.toString(),
       medicalRecord: patient.medicalRecord || '',
-      insurance: patient.insurance,
-      subscription: !!patient.activeSubscription,
+      insuranceProviderId: patient.insuranceProvider?.id || '',
+      subscription: patient.subscription,
       sex: patient.sex
     });
     setShowForm(true);
@@ -56,7 +69,10 @@ export default function PatientsPage() {
         name: formData.name,
         age: parseInt(formData.age),
         medicalRecord: formData.medicalRecord,
-        insurance: formData.insurance,
+        insuranceProvider: formData.insuranceProviderId 
+          ? { id: parseInt(formData.insuranceProviderId) } 
+          : null,
+        subscription: formData.subscription,
         sex: formData.sex
       };
 
@@ -70,7 +86,7 @@ export default function PatientsPage() {
       
       setShowForm(false);
       setEditId(null);
-      setFormData({ name: '', age: '', medicalRecord: '', insurance: false, subscription: false, sex: true });
+      setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
       fetchPatients();
     } catch (error) {
       console.error('Error saving patient:', error);
@@ -102,7 +118,7 @@ export default function PatientsPage() {
           onClick={() => {
             if (showForm && editId) {
               setEditId(null);
-              setFormData({ name: '', age: '', medicalRecord: '', insurance: false, subscription: false, sex: true });
+              setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
             } else {
               setShowForm(!showForm);
             }
@@ -163,17 +179,25 @@ export default function PatientsPage() {
               onChange={(e) => setFormData({...formData, medicalRecord: e.target.value})}
             />
           </div>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
+          <div className="flex items-center gap-4 col-span-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-gray-600">Asigurător</label>
+              <select
                 disabled={saving}
-                checked={formData.insurance}
-                onChange={(e) => setFormData({...formData, insurance: e.target.checked})}
-              />
-              Asigurare
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+                className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none min-w-[200px]"
+                value={formData.insuranceProviderId}
+                onChange={(e) => setFormData({...formData, insuranceProviderId: e.target.value})}
+              >
+                <option value="">Fără asigurare (-)</option>
+                {insuranceProviders.map(provider => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer mt-6">
               <input 
                 type="checkbox" 
                 disabled={saving}
@@ -182,17 +206,19 @@ export default function PatientsPage() {
               />
               Abonament
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-gray-600">Sex</label>
               <select 
                 disabled={saving}
-                className="border p-1 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={formData.sex ? 'true' : 'false'}
                 onChange={(e) => setFormData({...formData, sex: e.target.value === 'true'})}
               >
                 <option value="true">Masculin</option>
                 <option value="false">Feminin</option>
               </select>
-            </label>
+            </div>
           </div>
           <div className="col-span-2 flex justify-end gap-3 mt-2">
             <button 
@@ -230,7 +256,8 @@ export default function PatientsPage() {
                 <th className="px-6 py-4 font-semibold text-gray-700">Nume</th>
                 <th className="px-6 py-4 font-semibold text-gray-700">Vârstă</th>
                 <th className="px-6 py-4 font-semibold text-gray-700">Sex</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Asigurare</th>
+                <th className="px-6 py-4 font-semibold text-gray-700">Abonament</th>
+                <th className="px-6 py-4 font-semibold text-gray-700">Asigurător</th>
                 <th className="px-6 py-4 font-semibold text-gray-700">Acțiuni</th>
               </tr>
             </thead>
@@ -242,9 +269,12 @@ export default function PatientsPage() {
                   <td className="px-6 py-4 text-gray-600">{patient.age} ani</td>
                   <td className="px-6 py-4 text-gray-600">{patient.sex ? 'M' : 'F'}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${patient.insurance ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {patient.insurance ? 'Da' : 'Nu'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${patient.subscription ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+                      {patient.subscription ? 'Da' : 'Nu'}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {patient.insuranceProvider ? patient.insuranceProvider.name : '-'}
                   </td>
                   <td className="px-6 py-4 flex gap-3">
                     <button 

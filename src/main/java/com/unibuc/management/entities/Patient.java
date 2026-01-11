@@ -23,7 +23,12 @@ public class Patient {
     private String medicalRecord;
 
     @Column(nullable = false)
-    private Boolean insurance;
+    private Boolean subscription;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_insurance_provider")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "coveredServices"})
+    private InsuranceProvider insuranceProvider;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_subscription_plan")
@@ -63,12 +68,20 @@ public class Patient {
         this.medicalRecord = medicalRecord;
     }
 
-    public Boolean getInsurance() {
-        return insurance;
+    public Boolean getSubscription() {
+        return subscription;
     }
 
-    public void setInsurance(final Boolean insurance) {
-        this.insurance = insurance;
+    public void setSubscription(final Boolean subscription) {
+        this.subscription = subscription;
+    }
+
+    public InsuranceProvider getInsuranceProvider() {
+        return insuranceProvider;
+    }
+
+    public void setInsuranceProvider(InsuranceProvider insuranceProvider) {
+        this.insuranceProvider = insuranceProvider;
     }
 
     public SubscriptionPlan getActiveSubscription() {

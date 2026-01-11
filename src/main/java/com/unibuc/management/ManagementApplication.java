@@ -14,8 +14,20 @@ public class ManagementApplication {
 	}
 
 	@Bean
-	CommandLineRunner initDatabase(MedicalServiceRepository repository, com.unibuc.management.repositories.PaymentTypeRepository paymentRepository) {
+	CommandLineRunner initDatabase(MedicalServiceRepository repository,
+								   com.unibuc.management.repositories.PaymentTypeRepository paymentRepository,
+								   com.unibuc.management.repositories.InsuranceProviderRepository insuranceRepository) {
 		return args -> {
+			if (insuranceRepository.count() == 0) {
+				insuranceRepository.save(createInsurance("CASMB", "021-302-11-00"));
+				insuranceRepository.save(createInsurance("Allianz-Tiriac", "021-201-91-00"));
+				insuranceRepository.save(createInsurance("Signal Iduna", "021-301-30-00"));
+				insuranceRepository.save(createInsurance("Groupama Asigurari", "0374-110-110"));
+				insuranceRepository.save(createInsurance("Omniasig", "021-9669"));
+				insuranceRepository.save(createInsurance("Generali", "021-312-36-35"));
+				System.out.println("Baza de date a fost populată cu furnizori de asigurări.");
+			}
+
 			if (repository.count() == 0) {
 				MedicalService cardiores = repository.save(createService("Cardiologie", "Cardiologie", 8, 16));
 				MedicalService generalres = repository.save(createService("Consultație Generală", "Medicină Internă", 9, 17));
@@ -62,5 +74,12 @@ public class ManagementApplication {
 		service.setRating(5.0);
 		service.setNrOfRatings(0);
 		return service;
+	}
+
+	private com.unibuc.management.entities.InsuranceProvider createInsurance(String name, String contact) {
+		com.unibuc.management.entities.InsuranceProvider insurance = new com.unibuc.management.entities.InsuranceProvider();
+		insurance.setName(name);
+		insurance.setContactNumber(contact);
+		return insurance;
 	}
 }

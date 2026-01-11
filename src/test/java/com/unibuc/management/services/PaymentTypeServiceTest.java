@@ -1,5 +1,6 @@
 package com.unibuc.management.services;
 
+import com.unibuc.management.entities.InsuranceProvider;
 import com.unibuc.management.entities.MedicalService;
 import com.unibuc.management.entities.Patient;
 import com.unibuc.management.entities.PaymentType;
@@ -46,7 +47,8 @@ class PaymentTypeServiceTest {
         patient = new Patient();
         patient.setId(1);
         patient.setName("John Doe");
-        patient.setInsurance(true);
+        patient.setInsuranceProvider(new InsuranceProvider());
+        patient.setSubscription(false);
         patient.setActiveSubscription(null);
 
         paymentType = new PaymentType();
@@ -106,7 +108,8 @@ class PaymentTypeServiceTest {
     @Test
     void testGetPriceForPatient_WithSubscription() {
         // Test when patient has subscription but no insurance
-        patient.setInsurance(false);
+        patient.setInsuranceProvider(null);
+        patient.setSubscription(true);
         patient.setActiveSubscription(new SubscriptionPlan());
 
         when(medicalServiceService.getMedicalServiceById(1)).thenReturn(Optional.of(medicalService));
@@ -129,7 +132,8 @@ class PaymentTypeServiceTest {
     @Test
     void testGetPriceForPatient_NoInsuranceNoSubscription() {
         // Test when patient has neither insurance nor subscription
-        patient.setInsurance(false);
+        patient.setInsuranceProvider(null);
+        patient.setSubscription(false);
         patient.setActiveSubscription(null);
 
         when(medicalServiceService.getMedicalServiceById(1)).thenReturn(Optional.of(medicalService));

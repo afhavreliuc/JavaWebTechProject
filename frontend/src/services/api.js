@@ -45,5 +45,13 @@ export const medicalServiceService = {
   getAll: () => api.get('/medical-services'),
 };
 
+export const insuranceProviderService = {
+  getAll: () => api.get('/insurance-providers'),
+  getById: (id) => api.get(`/insurance-providers/${id}`),
+  create: (provider) => api.post('/insurance-providers', provider),
+  update: (id, provider) => api.put(`/insurance-providers/${id}`, provider),
+  delete: (id) => api.delete(`/insurance-providers/${id}`),
+};
+
 export default api;
 

@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, UserCog, CalendarDays, Database } from 'lucide-react';
+import { LayoutDashboard, Users, UserCog, CalendarDays, Database, ShieldCheck } from 'lucide-react';
 import PatientsPage from './pages/PatientsPage';
 import DoctorsPage from './pages/DoctorsPage';
 import AppointmentsPage from './pages/AppointmentsPage';
+import InsuranceProvidersPage from './pages/InsuranceProvidersPage';
 import DataWarehousePage from './pages/DataWarehousePage';
 
 function App() {
@@ -33,6 +34,10 @@ function App() {
                       <CalendarDays size={18} />
                       Programări
                     </Link>
+                    <Link to="/insurance" className="flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
+                      <ShieldCheck size={18} />
+                      Asigurări
+                    </Link>
                   </nav>
                 </div>
 
@@ -52,6 +57,7 @@ function App() {
               <Route path="/patients" element={<PatientsPage />} />
               <Route path="/doctors" element={<DoctorsPage />} />
               <Route path="/appointments" element={<AppointmentsPage />} />
+              <Route path="/insurance" element={<InsuranceProvidersPage />} />
               <Route path="/dw" element={<DataWarehousePage />} />
               <Route path="/" element={
                 <div className="text-center mt-20">
