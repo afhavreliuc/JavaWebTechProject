@@ -45,6 +45,10 @@ export const medicalServiceService = {
   getAll: () => api.get('/medical-services'),
 };
 
+export const subscriptionPlanService = {
+  getAll: () => api.get('/subscription-plans'),
+};
+
 export const insuranceProviderService = {
   getAll: () => api.get('/insurance-providers'),
   getById: (id) => api.get(`/insurance-providers/${id}`),

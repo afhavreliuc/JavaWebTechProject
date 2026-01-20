@@ -54,6 +54,15 @@ public class MedicalService {
             inverseJoinColumns = @JoinColumn(name = "id_insurance_provider")
     )
     private Set<InsuranceProvider> coveredByInsurances;
+
+    @ManyToMany
+    @JoinTable(
+            name = "service_subscription_plan",
+            joinColumns = @JoinColumn(name = "id_medical_service"),
+            inverseJoinColumns = @JoinColumn(name = "id_subscription_plan")
+    )
+    private Set<SubscriptionPlan> includedInSubscriptions;
+
     public Integer getId() {
         return id;
     }
@@ -138,5 +147,13 @@ public class MedicalService {
 
     public void setCoveredByInsurances(Set<InsuranceProvider> coveredByInsurances) {
         this.coveredByInsurances = coveredByInsurances;
+    }
+
+    public Set<SubscriptionPlan> getIncludedInSubscriptions() {
+        return includedInSubscriptions;
+    }
+
+    public void setIncludedInSubscriptions(Set<SubscriptionPlan> includedInSubscriptions) {
+        this.includedInSubscriptions = includedInSubscriptions;
     }
 }

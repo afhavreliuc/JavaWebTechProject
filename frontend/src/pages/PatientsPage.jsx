@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { patientService, insuranceProviderService } from '../services/api';
+import { patientService, insuranceProviderService, subscriptionPlanService } from '../services/api';
 import { UserPlus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState([]);
   const [insuranceProviders, setInsuranceProviders] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -15,6 +16,7 @@ export default function PatientsPage() {
     age: '',
     medicalRecord: '',
     insuranceProviderId: '',
+    subscriptionPlanId: '',
     subscription: false,
     sex: true
   });
@@ -37,10 +39,23 @@ export default function PatientsPage() {
     }
   };
 
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const response = await subscriptionPlanService.getAll();
+      setSubscriptionPlans(response.data);
+    } catch (error) {
+      console.error('Error fetching subscription plans:', error);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchPatients(), fetchInsuranceProviders()]);
+      await Promise.all([
+        fetchPatients(), 
+        fetchInsuranceProviders(),
+        fetchSubscriptionPlans()
+      ]);
       setLoading(false);
     };
     loadData();
@@ -53,6 +68,7 @@ export default function PatientsPage() {
       age: patient.age.toString(),
       medicalRecord: patient.medicalRecord || '',
       insuranceProviderId: patient.insuranceProvider?.id || '',
+      subscriptionPlanId: patient.activeSubscription?.id || '',
       subscription: patient.subscription,
       sex: patient.sex
     });
@@ -72,7 +88,10 @@ export default function PatientsPage() {
         insuranceProvider: formData.insuranceProviderId 
           ? { id: parseInt(formData.insuranceProviderId) } 
           : null,
-        subscription: formData.subscription,
+        activeSubscription: formData.subscriptionPlanId
+          ? { id: parseInt(formData.subscriptionPlanId) }
+          : null,
+        subscription: formData.subscription || !!formData.subscriptionPlanId,
         sex: formData.sex
       };
 
@@ -86,7 +105,7 @@ export default function PatientsPage() {
       
       setShowForm(false);
       setEditId(null);
-      setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
+      setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscriptionPlanId: '', subscription: false, sex: true });
       fetchPatients();
     } catch (error) {
       console.error('Error saving patient:', error);
@@ -197,15 +216,22 @@ export default function PatientsPage() {
               </select>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer mt-6">
-              <input 
-                type="checkbox" 
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold text-gray-600">Abonament (Plan)</label>
+              <select
                 disabled={saving}
-                checked={formData.subscription}
-                onChange={(e) => setFormData({...formData, subscription: e.target.checked})}
-              />
-              Abonament
-            </label>
+                className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none min-w-[200px]"
+                value={formData.subscriptionPlanId}
+                onChange={(e) => setFormData({...formData, subscriptionPlanId: e.target.value})}
+              >
+                <option value="">Fără abonament (-)</option>
+                {subscriptionPlans.map(plan => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} ({plan.monthlyFee} RON)
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-semibold text-gray-600">Sex</label>
@@ -269,8 +295,8 @@ export default function PatientsPage() {
                   <td className="px-6 py-4 text-gray-600">{patient.age} ani</td>
                   <td className="px-6 py-4 text-gray-600">{patient.sex ? 'M' : 'F'}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${patient.subscription ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {patient.subscription ? 'Da' : 'Nu'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${patient.activeSubscription || patient.subscription ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+                      {patient.activeSubscription ? patient.activeSubscription.name : (patient.subscription ? 'Da' : 'Nu')}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">

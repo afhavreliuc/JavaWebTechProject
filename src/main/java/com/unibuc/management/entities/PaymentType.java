@@ -34,11 +34,6 @@ public class PaymentType {
     @JoinColumn(name = "idMedicalService", nullable = false)
     private MedicalService medicalService;
 
-    @OneToMany(mappedBy = "payment")
-    @JsonIgnore
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
-    private Set<Appointment> paymentAppointments;
-
     public Integer getId() {
         return id;
     }
@@ -85,14 +80,6 @@ public class PaymentType {
 
     public void setMedicalService(final MedicalService medicalService) {
         this.medicalService = medicalService;
-    }
-
-    public Set<Appointment> getPaymentAppointments() {
-        return paymentAppointments;
-    }
-
-    public void setPaymentAppointments(final Set<Appointment> paymentAppointments) {
-        this.paymentAppointments = paymentAppointments;
     }
 
 }

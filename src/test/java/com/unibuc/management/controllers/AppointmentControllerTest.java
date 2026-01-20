@@ -54,13 +54,13 @@ public class AppointmentControllerTest {
 
         Patient patient = new Patient();
         MedicalService medicalService = new MedicalService();
-        PaymentType paymentType = new PaymentType();
+        Payment payment = new Payment();
         Doctor doctor = new Doctor();
 
         when(patientService.getPatientById(patientId)).thenReturn(Optional.of(patient));
         when(medicalServiceService.getMedicalServiceById(medicalServiceId)).thenReturn(Optional.of(medicalService));
         when(doctorService.getDoctorByMedicalService(medicalServiceId)).thenReturn(Optional.of(doctor));
-        when(paymentTypeService.getPriceForPatient(medicalServiceId, patientId)).thenReturn(Optional.of(paymentType));
+        when(paymentTypeService.createPaymentForPatient(any(Patient.class), any(MedicalService.class), any(Appointment.class))).thenReturn(payment);
 
         List<OffsetDateTime> availableSlots = Arrays.asList(appointmentFrom);
         when(appointmentService.getAvailableTimeSlots(medicalService, appointmentFrom.toLocalDate().toString())).thenReturn(availableSlots);
@@ -86,11 +86,11 @@ public class AppointmentControllerTest {
 
         Patient patient = new Patient();
         MedicalService medicalService = new MedicalService();
-        PaymentType paymentType = new PaymentType();
+        Payment payment = new Payment();
 
         when(patientService.getPatientById(patientId)).thenReturn(Optional.of(patient));
         when(medicalServiceService.getMedicalServiceById(medicalServiceId)).thenReturn(Optional.of(medicalService));
-        when(paymentTypeService.getPriceForPatient(medicalServiceId, patientId)).thenReturn(Optional.of(paymentType));
+        when(paymentTypeService.createPaymentForPatient(any(Patient.class), any(MedicalService.class), any(Appointment.class))).thenReturn(payment);
 
         List<OffsetDateTime> availableSlots = Collections.emptyList();
         when(appointmentService.getAvailableTimeSlots(medicalService, appointmentFrom.toLocalDate().toString())).thenReturn(availableSlots);

@@ -39,6 +39,10 @@ public class Patient {
     @JoinColumn(name = "insurance_provider_id")
     private InsuranceProvider insuranceProvider;
 
+    @ManyToOne
+    @JoinColumn(name = "subscription_plan_id")
+    private SubscriptionPlan activeSubscription;
+
     public Integer getId() {
         return id;
     }
@@ -101,6 +105,14 @@ public class Patient {
 
     public void setInsuranceProvider(InsuranceProvider insuranceProvider) {
         this.insuranceProvider = insuranceProvider;
+    }
+
+    public SubscriptionPlan getActiveSubscription() {
+        return activeSubscription;
+    }
+
+    public void setActiveSubscription(SubscriptionPlan activeSubscription) {
+        this.activeSubscription = activeSubscription;
     }
 
 }

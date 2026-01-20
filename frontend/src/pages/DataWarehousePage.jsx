@@ -104,18 +104,6 @@ export default function DataWarehousePage() {
             <p className="text-sm">{stats.error}</p>
           </div>
         )}
-
-        <div className="mt-12 p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-          <h4 className="text-indigo-900 font-bold mb-2 flex items-center gap-2">
-            <BarChart3 size={18} />
-            Informații ETL (Extract, Transform, Load)
-          </h4>
-          <p className="text-indigo-700 text-sm leading-relaxed">
-            Acest modul permite transferul datelor tranzacționale (OLTP) către baza de date analitică (DW). 
-            Procesul de propagare curăță datele din DW și le reîncarcă din sursa Medical, asigurând 
-            integritatea și disponibilitatea lor pentru raportare fără a afecta performanța sistemului principal.
-          </p>
-        </div>
       </div>
     </div>
   );
