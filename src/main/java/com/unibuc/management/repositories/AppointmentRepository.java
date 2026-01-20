@@ -1,5 +1,6 @@
 package com.unibuc.management.repositories;
 import com.unibuc.management.entities.Appointment;
+import com.unibuc.management.entities.Doctor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

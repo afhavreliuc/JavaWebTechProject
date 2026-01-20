@@ -31,7 +31,7 @@ public class AppointmentControllerTest {
     private MedicalServiceService medicalServiceService;
 
     @Mock
-    private PaymentTypeService paymentTypeService;
+    private PaymentService paymentTypeService;
 
     @Mock
     private DoctorService doctorService;

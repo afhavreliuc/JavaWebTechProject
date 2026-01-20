@@ -3,11 +3,13 @@ package com.unibuc.management.entities;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
 
 @Entity
 @Access(AccessType.FIELD)
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class MedicalService {
 
     @Id
@@ -28,19 +30,17 @@ public class MedicalService {
     private Integer endHour;
 
     @Column(nullable = false)
+    private Double price;
+
+    @Column(nullable = false)
     private Double rating;
 
     @Column(nullable = false)
     private Integer nrOfRatings;
 
     @OneToMany(mappedBy = "medicalService")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "medicalService"})
-    private Set<Doctor> medicalServiceDoctors;
-
-    @OneToMany(mappedBy = "medicalService")
-    @JsonIgnore
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
-    private Set<PaymentType> medicalServicePaymentTypes;
+    private Set<Doctor> medicalServiceDoctors;
 
     @OneToMany(mappedBy = "medicalService")
     @JsonIgnore
@@ -49,20 +49,11 @@ public class MedicalService {
 
     @ManyToMany
     @JoinTable(
-        name = "service_insurance_coverage",
-        joinColumns = @JoinColumn(name = "id_medical_service"),
-        inverseJoinColumns = @JoinColumn(name = "id_insurance_provider")
+            name = "service_insurance_coverage",
+            joinColumns = @JoinColumn(name = "id_medical_service"),
+            inverseJoinColumns = @JoinColumn(name = "id_insurance_provider")
     )
     private Set<InsuranceProvider> coveredByInsurances;
-
-    @ManyToMany
-    @JoinTable(
-        name = "service_subscription_coverage",
-        joinColumns = @JoinColumn(name = "id_medical_service"),
-        inverseJoinColumns = @JoinColumn(name = "id_subscription_plan")
-    )
-    private Set<SubscriptionPlan> includedInSubscriptions;
-
     public Integer getId() {
         return id;
     }
@@ -102,7 +93,13 @@ public class MedicalService {
     public void setEndHour(final Integer endHour) {
         this.endHour = endHour;
     }
+    public Double getPrice() {
+        return price;
+    }
 
+    public void setPrice(Double price) {
+        this.price = price;
+    }
     public Double getRating() {
         return rating;
     }
@@ -127,14 +124,6 @@ public class MedicalService {
         this.medicalServiceDoctors = medicalServiceDoctors;
     }
 
-    public Set<PaymentType> getMedicalServicePaymentTypes() {
-        return medicalServicePaymentTypes;
-    }
-
-    public void setMedicalServicePaymentTypes(final Set<PaymentType> medicalServicePaymentTypes) {
-        this.medicalServicePaymentTypes = medicalServicePaymentTypes;
-    }
-
     public Set<Appointment> getMedicalServiceAppointments() {
         return medicalServiceAppointments;
     }
@@ -150,13 +139,4 @@ public class MedicalService {
     public void setCoveredByInsurances(Set<InsuranceProvider> coveredByInsurances) {
         this.coveredByInsurances = coveredByInsurances;
     }
-
-    public Set<SubscriptionPlan> getIncludedInSubscriptions() {
-        return includedInSubscriptions;
-    }
-
-    public void setIncludedInSubscriptions(Set<SubscriptionPlan> includedInSubscriptions) {
-        this.includedInSubscriptions = includedInSubscriptions;
-    }
-
 }

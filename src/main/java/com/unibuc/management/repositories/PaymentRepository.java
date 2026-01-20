@@ -1,9 +1,9 @@
 package com.unibuc.management.repositories;
 
-import com.unibuc.management.entities.Patient;
+import com.unibuc.management.entities.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PatientRepository extends JpaRepository<Patient, Integer> {
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
 }

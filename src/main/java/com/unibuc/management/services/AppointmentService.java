@@ -9,7 +9,6 @@ import com.unibuc.management.repositories.DoctorRepository;
 import com.unibuc.management.repositories.PaidTimeOffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.util.ArrayList;
@@ -57,7 +56,7 @@ public class AppointmentService {
 
             boolean isPastTime = slot.isBefore(now);
             boolean isBlockedByPTO = doctorPTOs.stream().anyMatch(pto -> slot.isAfter(pto.getPtoFrom()) && slot.isBefore(pto.getPtoTo()));
-            boolean hasAppointment = existingAppointments.stream().anyMatch(appt -> appt.getAppointmentFrom().toInstant().equals(slot.toInstant()));
+            boolean hasAppointment = existingAppointments.stream().anyMatch(appt -> appt.getAppointmentFrom().equals(slot));
 
             // Include slot if it's valid
             if (!isPastTime && !isBlockedByPTO && !hasAppointment) {
@@ -75,25 +74,6 @@ public class AppointmentService {
 
     public List<Appointment> getAppointmentsByPatientId(Integer patientId) {
         return appointmentRepository.findByPatientId(patientId);
-    }
-
-    @Transactional
-    public void deleteAppointment(Integer appointmentId) {
-        appointmentRepository.findById(appointmentId).ifPresent(appointment -> {
-            // Remove from patient side
-            if (appointment.getPatient() != null) {
-                appointment.getPatient().getPatientAppointments().remove(appointment);
-            }
-            // Remove from medical service side
-            if (appointment.getMedicalService() != null) {
-                appointment.getMedicalService().getMedicalServiceAppointments().remove(appointment);
-            }
-            // Remove from payment side
-            if (appointment.getPayment() != null) {
-                appointment.getPayment().getPaymentAppointments().remove(appointment);
-            }
-            appointmentRepository.delete(appointment);
-        });
     }
 
     public Appointment save(Appointment appointment) {
