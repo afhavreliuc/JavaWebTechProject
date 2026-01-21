@@ -3,6 +3,7 @@ package com.unibuc.management.controllers;
 import com.unibuc.management.entities.*;
 import com.unibuc.management.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<Appointment> createAppointment(@RequestParam Integer patientId,
                                                          @RequestParam Integer medicalServiceId,
-                                                         @RequestParam OffsetDateTime appointmentFrom) {
+                                                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime appointmentFrom) {
 
         Optional<Patient> patientOpt = patientService.getPatientById(patientId);
         Optional<MedicalService> medicalServiceOpt = medicalServiceService.getMedicalServiceById(medicalServiceId);
@@ -67,7 +68,11 @@ public class AppointmentController {
                 appointment.getAppointmentFrom().toLocalDate().toString()
         );
 
-        if (!availableSlots.contains(appointment.getAppointmentFrom())) {
+        boolean slotAvailable = availableSlots.stream().anyMatch(slot -> 
+            slot.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+                .equals(appointment.getAppointmentFrom().truncatedTo(java.time.temporal.ChronoUnit.MINUTES))
+        );
+        if (!slotAvailable) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
         Appointment savedAppointment = appointmentService.createAppointment(appointment);
@@ -89,6 +94,37 @@ public class AppointmentController {
     public ResponseEntity<List<Appointment>> getAppointmentsByPatientId(@PathVariable Integer patientId) {
         List<Appointment> appointments = appointmentService.getAppointmentsByPatientId(patientId);
         return ResponseEntity.ok(appointments);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Appointment> updateAppointment(@PathVariable Integer id,
+                                                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime appointmentFrom) {
+        Optional<Appointment> appointmentOpt = appointmentService.findById(id);
+        if (appointmentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Appointment appointment = appointmentOpt.get();
+        MedicalService medicalService = appointment.getMedicalService();
+
+        // Verify the new slot is available
+        List<OffsetDateTime> availableSlots = appointmentService.getAvailableTimeSlots(
+                medicalService,
+                appointmentFrom.toLocalDate().toString()
+        );
+
+        boolean slotAvailable = availableSlots.stream().anyMatch(slot -> 
+            slot.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+                .equals(appointmentFrom.truncatedTo(java.time.temporal.ChronoUnit.MINUTES))
+        );
+
+        if (!slotAvailable) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        appointment.setAppointmentFrom(appointmentFrom);
+        Appointment updatedAppointment = appointmentService.save(appointment);
+        return ResponseEntity.ok(updatedAppointment);
     }
 
     @PostMapping("/{appointmentId}/feedback")

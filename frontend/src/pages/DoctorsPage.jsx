@@ -10,6 +10,7 @@ export default function DoctorsPage() {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
+    name: '',
     office: '',
     numberOfPTOdays: 21,
     medicalServiceId: ''
@@ -37,6 +38,7 @@ export default function DoctorsPage() {
   const handleEdit = (doctor) => {
     setEditId(doctor.id);
     setFormData({
+      name: doctor.name || '',
       office: doctor.office,
       numberOfPTOdays: doctor.numberOfPtodays,
       medicalServiceId: doctor.medicalService?.id?.toString() || ''
@@ -50,6 +52,7 @@ export default function DoctorsPage() {
     setSaving(true);
     try {
       const payload = {
+        name: formData.name,
         office: formData.office,
         numberOfPtodays: parseInt(formData.numberOfPTOdays),
         medicalService: { id: parseInt(formData.medicalServiceId) }
@@ -63,7 +66,7 @@ export default function DoctorsPage() {
 
       setShowForm(false);
       setEditId(null);
-      setFormData({ office: '', numberOfPTOdays: 21, medicalServiceId: '' });
+      setFormData({ name: '', office: '', numberOfPTOdays: 21, medicalServiceId: '' });
       fetchData();
     } catch (error) {
       console.error('Error saving doctor:', error);
@@ -91,7 +94,7 @@ export default function DoctorsPage() {
           onClick={() => {
             if (showForm && editId) {
               setEditId(null);
-              setFormData({ office: '', numberOfPTOdays: 21, medicalServiceId: '' });
+              setFormData({ name: '', office: '', numberOfPTOdays: 21, medicalServiceId: '' });
             } else {
               setShowForm(!showForm);
             }
@@ -108,6 +111,20 @@ export default function DoctorsPage() {
           <h3 className="col-span-2 text-lg font-bold text-indigo-900 mb-2 border-b pb-2">
             {editId ? `Editare Doctor #${editId}` : 'Adăugare Doctor Nou'}
           </h3>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">
+              Nume Complet <span className="text-blue-600">*</span>
+            </label>
+            <input 
+              type="text" 
+              required
+              disabled={saving}
+              className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              placeholder="ex: Dr. Popescu Ion"
+            />
+          </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">
               Cabinet / Oficiu <span className="text-blue-600">*</span>
@@ -160,7 +177,7 @@ export default function DoctorsPage() {
               onClick={() => {
                 setShowForm(false);
                 setEditId(null);
-                setFormData({ office: '', numberOfPTOdays: 21, medicalServiceId: '' });
+                setFormData({ name: '', office: '', numberOfPTOdays: 21, medicalServiceId: '' });
               }}
               disabled={saving}
               className="text-gray-600 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -186,7 +203,7 @@ export default function DoctorsPage() {
             <div key={doctor.id} className="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500 hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Dr. {doctor.id}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{doctor.name || `Dr. #${doctor.id}`}</h3>
                   <p className="text-indigo-600 font-medium">{doctor.medicalService?.name || 'Fără serviciu'}</p>
                 </div>
                 <div className="flex gap-2">

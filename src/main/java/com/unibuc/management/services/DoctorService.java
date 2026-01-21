@@ -5,8 +5,8 @@ import com.unibuc.management.repositories.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class DoctorService {
@@ -22,14 +22,15 @@ public class DoctorService {
         return doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
     }
-    public Set<Doctor> getAllDoctors() {
-        return (Set<Doctor>) doctorRepository.findAll();
+    public List<Doctor> getAllDoctors() {
+        return doctorRepository.findAll();
     }
 
     public Doctor updateDoctor(Integer id, Doctor doctorDetails) {
         Doctor existingDoctor = doctorRepository.findById(id).orElse(null);
         if (existingDoctor == null) return null;
 
+        existingDoctor.setName(doctorDetails.getName());
         existingDoctor.setOffice(doctorDetails.getOffice());
         existingDoctor.setNumberOfPtodays(doctorDetails.getNumberOfPtodays());
         existingDoctor.setMedicalService(doctorDetails.getMedicalService());

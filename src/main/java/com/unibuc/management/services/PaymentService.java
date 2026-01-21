@@ -64,6 +64,6 @@ public class PaymentService {
         payment.setPaymentDate(LocalDateTime.now());
         payment.setAppointment(appointment); // legăm payment de appointment
 
-        return paymentRepository.save(payment);
+        return payment;
     }
 }

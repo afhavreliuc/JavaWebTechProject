@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { patientService, insuranceProviderService, subscriptionPlanService } from '../services/api';
+import { patientService, insuranceProviderService } from '../services/api';
 import { UserPlus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState([]);
   const [insuranceProviders, setInsuranceProviders] = useState([]);
-  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -16,7 +15,6 @@ export default function PatientsPage() {
     age: '',
     medicalRecord: '',
     insuranceProviderId: '',
-    subscriptionPlanId: '',
     subscription: false,
     sex: true
   });
@@ -39,22 +37,12 @@ export default function PatientsPage() {
     }
   };
 
-  const fetchSubscriptionPlans = async () => {
-    try {
-      const response = await subscriptionPlanService.getAll();
-      setSubscriptionPlans(response.data);
-    } catch (error) {
-      console.error('Error fetching subscription plans:', error);
-    }
-  };
-
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       await Promise.all([
         fetchPatients(), 
-        fetchInsuranceProviders(),
-        fetchSubscriptionPlans()
+        fetchInsuranceProviders()
       ]);
       setLoading(false);
     };
@@ -65,11 +53,10 @@ export default function PatientsPage() {
     setEditId(patient.id);
     setFormData({
       name: patient.name,
-      age: patient.age.toString(),
+      age: patient.age,
       medicalRecord: patient.medicalRecord || '',
       insuranceProviderId: patient.insuranceProvider?.id || '',
-      subscriptionPlanId: patient.activeSubscription?.id || '',
-      subscription: patient.subscription,
+      subscription: patient.subscription || false,
       sex: patient.sex
     });
     setShowForm(true);
@@ -83,15 +70,12 @@ export default function PatientsPage() {
     try {
       const payload = {
         name: formData.name,
-        age: parseInt(formData.age),
+        age: formData.age,
         medicalRecord: formData.medicalRecord,
         insuranceProvider: formData.insuranceProviderId 
           ? { id: parseInt(formData.insuranceProviderId) } 
           : null,
-        activeSubscription: formData.subscriptionPlanId
-          ? { id: parseInt(formData.subscriptionPlanId) }
-          : null,
-        subscription: formData.subscription || !!formData.subscriptionPlanId,
+        subscription: formData.subscription,
         sex: formData.sex
       };
 
@@ -105,7 +89,7 @@ export default function PatientsPage() {
       
       setShowForm(false);
       setEditId(null);
-      setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscriptionPlanId: '', subscription: false, sex: true });
+      setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
       fetchPatients();
     } catch (error) {
       console.error('Error saving patient:', error);
@@ -178,10 +162,10 @@ export default function PatientsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">
-              Vârstă <span className="text-blue-600">*</span>
+              Data nașterii <span className="text-blue-600">*</span>
             </label>
             <input 
-              type="number" 
+              type="date" 
               required
               disabled={saving}
               className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -217,20 +201,17 @@ export default function PatientsPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-semibold text-gray-600">Abonament (Plan)</label>
-              <select
-                disabled={saving}
-                className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none min-w-[200px]"
-                value={formData.subscriptionPlanId}
-                onChange={(e) => setFormData({...formData, subscriptionPlanId: e.target.value})}
-              >
-                <option value="">Fără abonament (-)</option>
-                {subscriptionPlans.map(plan => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name} ({plan.monthlyFee} RON)
-                  </option>
-                ))}
-              </select>
+              <label className="text-sm font-semibold text-gray-600">Abonament</label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  disabled={saving}
+                  className="w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                  checked={formData.subscription}
+                  onChange={(e) => setFormData({...formData, subscription: e.target.checked})}
+                />
+                <span className="text-gray-700">Are abonament activ</span>
+              </label>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -292,11 +273,13 @@ export default function PatientsPage() {
                 <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-gray-600">#{patient.id}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">{patient.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{patient.age} ani</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {patient.age}
+                  </td>
                   <td className="px-6 py-4 text-gray-600">{patient.sex ? 'M' : 'F'}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${patient.activeSubscription || patient.subscription ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {patient.activeSubscription ? patient.activeSubscription.name : (patient.subscription ? 'Da' : 'Nu')}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${patient.subscription ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+                      {patient.subscription ? 'Da' : 'Nu'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">

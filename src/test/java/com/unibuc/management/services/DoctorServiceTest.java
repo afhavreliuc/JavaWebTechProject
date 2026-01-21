@@ -86,12 +86,11 @@ class DoctorServiceTest {
 
     @Test
     void testGetAllDoctors() {
-        // Mock the repository to return a set of doctors
-        Set<Doctor> doctors = Set.of(doctor);
-        when(doctorRepository.findAll()).thenReturn((List<Doctor>) doctors);
+        List<Doctor> doctors = List.of(doctor);
+        when(doctorRepository.findAll()).thenReturn(doctors);
 
         // Call the service method
-        Set<Doctor> allDoctors = doctorService.getAllDoctors();
+        List<Doctor> allDoctors = doctorService.getAllDoctors();
 
         // Verify the result
         assertNotNull(allDoctors);
