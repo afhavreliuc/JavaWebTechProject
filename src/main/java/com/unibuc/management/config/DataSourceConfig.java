@@ -1,16 +1,25 @@
 package com.unibuc.management.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
 
 @Configuration
 public class DataSourceConfig {
+
+    private final Environment env;
+
+    public DataSourceConfig(Environment env) {
+        this.env = env;
+    }
 
     @Bean
     @Primary
@@ -20,9 +29,23 @@ public class DataSourceConfig {
     }
 
     @Bean(name = "dwDataSource")
-    @ConfigurationProperties(prefix = "spring.dw-datasource")
     public DataSource dwDataSource() {
-        return DataSourceBuilder.create().build();
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        // H2 uses 'url' not 'jdbc-url' for DriverManagerDataSource
+        String jdbcUrl = env.getProperty("spring.dw-datasource.jdbc-url");
+        if (jdbcUrl == null) {
+            jdbcUrl = env.getProperty("spring.dw-datasource.url");
+        }
+        String driverClassName = env.getProperty("spring.dw-datasource.driver-class-name");
+        dataSource.setDriverClassName(driverClassName);
+        dataSource.setUrl(jdbcUrl);
+        dataSource.setUsername(env.getProperty("spring.dw-datasource.username"));
+        dataSource.setPassword(env.getProperty("spring.dw-datasource.password"));
+        
+        System.out.println("DW DataSource created: " + dataSource.getClass().getName());
+        System.out.println("DW DataSource URL: " + dataSource.getUrl());
+        System.out.println("DW DataSource Driver: " + driverClassName);
+        return dataSource;
     }
 
     @Bean
@@ -32,7 +55,7 @@ public class DataSourceConfig {
     }
 
     @Bean(name = "dwJdbcTemplate")
-    public JdbcTemplate dwJdbcTemplate(DataSource dwDataSource) {
+    public JdbcTemplate dwJdbcTemplate(@Qualifier("dwDataSource") DataSource dwDataSource) {
         return new JdbcTemplate(dwDataSource);
     }
 }
