@@ -79,7 +79,10 @@ export default function AppointmentsPage() {
       fetchPatientAppointments(selectedPatientId);
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      setMessage({ type: 'error', text: 'Eroare la ștergerea programării.' });
+      setMessage({ 
+        type: 'error', 
+        text: 'Nu s-a putut șterge programarea. Aceasta poate avea plăți procesate sau alte restricții.' 
+      });
     }
   };
 

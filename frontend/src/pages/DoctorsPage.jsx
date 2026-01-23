@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { doctorService, medicalServiceService } from '../services/api';
-import { UserCog, Trash2, Edit2, Plus } from 'lucide-react';
+import { UserCog, Trash2, Edit2, Plus, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState([]);
@@ -9,6 +9,7 @@ export default function DoctorsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     office: '',
@@ -50,6 +51,7 @@ export default function DoctorsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setMessage(null);
     try {
       const payload = {
         name: formData.name,
@@ -60,8 +62,10 @@ export default function DoctorsPage() {
 
       if (editId) {
         await doctorService.update(editId, payload);
+        setMessage({ type: 'success', text: 'Doctor actualizat cu succes!' });
       } else {
         await doctorService.create(payload);
+        setMessage({ type: 'success', text: 'Doctor salvat cu succes!' });
       }
 
       setShowForm(false);
@@ -70,6 +74,10 @@ export default function DoctorsPage() {
       fetchData();
     } catch (error) {
       console.error('Error saving doctor:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Eroare la salvarea doctorului. Verificați datele introduse.' 
+      });
     } finally {
       setSaving(false);
     }
@@ -79,9 +87,14 @@ export default function DoctorsPage() {
     if (window.confirm('Ești sigur că vrei să ștergi acest doctor?')) {
       try {
         await doctorService.delete(id);
+        setMessage({ type: 'success', text: 'Doctor șters cu succes!' });
         fetchData();
       } catch (error) {
         console.error('Error deleting doctor:', error);
+        setMessage({ 
+          type: 'error', 
+          text: 'Nu s-a putut șterge doctorul. Asigurați-vă că acesta nu are programări active sau alte legături în sistem.' 
+        });
       }
     }
   };
@@ -105,6 +118,15 @@ export default function DoctorsPage() {
           {editId ? 'Mod Nou Doctor' : 'Adaugă Doctor'}
         </button>
       </div>
+
+      {message && (
+        <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 animate-in fade-in duration-300 ${
+          message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+          <p className="font-medium">{message.text}</p>
+        </div>
+      )}
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-indigo-100 ring-2 ring-indigo-500/10">
@@ -187,9 +209,14 @@ export default function DoctorsPage() {
             <button 
               type="submit" 
               disabled={saving}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-all shadow-md disabled:opacity-70"
+              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-all shadow-md disabled:opacity-70 flex items-center gap-2"
             >
-              {saving ? 'Se salvează...' : 'Salvează'}
+              {saving ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  Se salvează...
+                </>
+              ) : 'Salvează'}
             </button>
           </div>
         </form>

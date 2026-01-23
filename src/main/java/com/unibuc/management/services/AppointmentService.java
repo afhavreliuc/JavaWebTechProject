@@ -79,4 +79,12 @@ public class AppointmentService {
     public Appointment save(Appointment appointment) {
         return appointmentRepository.save(appointment);
     }
+
+    public boolean deleteAppointment(Integer id) {
+        if (appointmentRepository.existsById(id)) {
+            appointmentRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 }

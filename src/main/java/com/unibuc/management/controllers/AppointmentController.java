@@ -153,4 +153,14 @@ public class AppointmentController {
 
         return ResponseEntity.ok("Feedback submitted successfully.");
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAppointment(@PathVariable Integer id) {
+        boolean deleted = appointmentService.deleteAppointment(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

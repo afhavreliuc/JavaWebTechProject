@@ -106,9 +106,14 @@ export default function PatientsPage() {
     if (window.confirm('Ești sigur că vrei să ștergi acest pacient?')) {
       try {
         await patientService.delete(id);
+        setMessage({ type: 'success', text: 'Pacient șters cu succes!' });
         fetchPatients();
       } catch (error) {
         console.error('Error deleting patient:', error);
+        setMessage({ 
+          type: 'error', 
+          text: 'Nu s-a putut șterge pacientul. Asigurați-vă că acesta nu are programări active sau alte legături în sistem.' 
+        });
       }
     }
   };
