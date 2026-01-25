@@ -5,6 +5,7 @@ import com.unibuc.management.services.InsuranceProviderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,12 +35,14 @@ public class InsuranceProviderController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<InsuranceProvider> createInsuranceProvider(@RequestBody InsuranceProvider insuranceProvider) {
         InsuranceProvider saved = insuranceProviderService.createInsuranceProvider(insuranceProvider);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<InsuranceProvider> updateInsuranceProvider(@PathVariable Integer id, @RequestBody InsuranceProvider insuranceProvider) {
         return insuranceProviderService.updateInsuranceProvider(id, insuranceProvider)
                 .map(ResponseEntity::ok)
@@ -47,6 +50,7 @@ public class InsuranceProviderController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<Void> deleteInsuranceProvider(@PathVariable Integer id) {
         if (insuranceProviderService.deleteInsuranceProvider(id)) {
             return ResponseEntity.noContent().build();

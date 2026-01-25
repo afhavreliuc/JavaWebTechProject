@@ -5,15 +5,17 @@ package com.unibuc.management.entities;
         import java.util.Set;
 
 @Entity
+@Table(name = "INSURANCE_PROVIDER")
 public class InsuranceProvider {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
     private Integer id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(length = 20)
+    @Column(name = "CONTACT_NUMBER", length = 20)
     private String contactNumber;
 
     @ManyToMany(mappedBy = "coveredByInsurances")

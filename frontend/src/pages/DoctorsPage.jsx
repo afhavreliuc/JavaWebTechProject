@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { doctorService, medicalServiceService } from '../services/api';
-import { UserCog, Trash2, Edit2, Plus, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { UserCog, Trash2, Edit2, Plus, CheckCircle2, AlertCircle, Loader2, Calendar } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 export default function DoctorsPage() {
+  const { user } = useAuth();
   const [doctors, setDoctors] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showPTOForm, setShowPTOForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -15,6 +19,10 @@ export default function DoctorsPage() {
     office: '',
     numberOfPTOdays: 21,
     medicalServiceId: ''
+  });
+  const [ptoData, setPTOData] = useState({
+    startDate: '',
+    endDate: ''
   });
 
   const fetchData = async () => {
@@ -99,10 +107,45 @@ export default function DoctorsPage() {
     }
   };
 
+  const handlePTOSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const start = new Date(ptoData.startDate).toISOString();
+      const end = new Date(ptoData.endDate).toISOString();
+      await axios.post(`http://localhost:8080/api/doctor-schedule/schedulePTO`, null, {
+        params: {
+          doctorId: user.doctorId,
+          startDate: start,
+          endDate: end
+        }
+      });
+      setMessage({ type: 'success', text: 'Concediu programat cu succes!' });
+      setShowPTOForm(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error scheduling PTO:', error);
+      setMessage({ type: 'error', text: error.response?.data || 'Eroare la programarea concediului.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-gray-800">Gestionare Doctori</h2>
+        <div className="flex gap-2">
+          {user.role === 'DOCTOR' && (
+            <button 
+              onClick={() => setShowPTOForm(!showPTOForm)}
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-700"
+            >
+              <Calendar size={20} />
+              Programează Concediu
+            </button>
+          )}
+          {user.role === 'DOCTOR' && (
         <button 
           onClick={() => {
             if (showForm && editId) {
@@ -117,6 +160,8 @@ export default function DoctorsPage() {
           <Plus size={20} />
           {editId ? 'Mod Nou Doctor' : 'Adaugă Doctor'}
         </button>
+          )}
+        </div>
       </div>
 
       {message && (
@@ -126,6 +171,49 @@ export default function DoctorsPage() {
           {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <p className="font-medium">{message.text}</p>
         </div>
+      )}
+
+      {showPTOForm && (
+        <form onSubmit={handlePTOSubmit} className="bg-orange-50 p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-orange-200">
+          <h3 className="col-span-2 text-lg font-bold text-orange-900 mb-2 border-b border-orange-200 pb-2">
+            Programare Concediu (PTO)
+          </h3>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">Dată Start</label>
+            <input 
+              type="datetime-local" 
+              required
+              className="border p-2 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+              value={ptoData.startDate}
+              onChange={(e) => setPTOData({...ptoData, startDate: e.target.value})}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">Dată Sfârșit</label>
+            <input 
+              type="datetime-local" 
+              required
+              className="border p-2 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+              value={ptoData.endDate}
+              onChange={(e) => setPTOData({...ptoData, endDate: e.target.value})}
+            />
+          </div>
+          <div className="col-span-2 flex justify-end gap-3 mt-2">
+            <button 
+              type="button" 
+              onClick={() => setShowPTOForm(false)}
+              className="text-gray-600 px-4 py-2 hover:bg-gray-100 rounded-lg"
+            >
+              Anulează
+            </button>
+            <button 
+              type="submit" 
+              className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 shadow-md"
+            >
+              Confirmă Concediu
+            </button>
+          </div>
+        </form>
       )}
 
       {showForm && (
@@ -233,20 +321,24 @@ export default function DoctorsPage() {
                   <h3 className="text-xl font-bold text-gray-900">{doctor.name || `Dr. #${doctor.id}`}</h3>
                   <p className="text-indigo-600 font-medium">{doctor.medicalService?.name || 'Fără serviciu'}</p>
                 </div>
+                {user.role === 'DOCTOR' && user.doctorId === doctor.id && (
                 <div className="flex gap-2">
                   <button 
                     onClick={() => handleEdit(doctor)}
                     className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                      title="Editează datele tale"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button 
                     onClick={() => handleDelete(doctor.id)}
                     className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Șterge contul tău de doctor"
                   >
                     <Trash2 size={18} />
                   </button>
                 </div>
+                )}
               </div>
               
               <div className="mt-4 space-y-2 text-sm text-gray-600">

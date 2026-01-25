@@ -7,33 +7,34 @@ import java.time.OffsetDateTime;
 
 
 @Entity
+@Table(name = "APPOINTMENT")
 @Access(AccessType.FIELD)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Appointment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(name = "IS_DOCTOR", nullable = false)
     private Boolean isDoctor;
 
-    @Column(nullable = false)
+    @Column(name = "APPOINTMENT_FROM", nullable = false)
     private OffsetDateTime appointment_from;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "STATUS", nullable = false, length = 50)
     private String status;
     @OneToOne(mappedBy = "appointment", cascade = CascadeType.ALL)
     private Payment payment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idMedicalService", nullable = false)
+    @JoinColumn(name = "ID_MEDICAL_SERVICE", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
     private MedicalService medicalService;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "idPatient", nullable = false)
+    @JoinColumn(name = "ID_PATIENT", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "patientAppointments"})
     private Patient patient;
 

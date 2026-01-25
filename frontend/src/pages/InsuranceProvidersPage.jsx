@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { insuranceProviderService } from '../services/api';
 import { Plus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function InsuranceProvidersPage() {
+  const { user } = useAuth();
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -83,6 +85,7 @@ export default function InsuranceProvidersPage() {
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-gray-800">Gestionare Asigurări</h2>
+        {user.role === 'DOCTOR' && (
         <button 
           onClick={() => {
             if (showForm && editId) {
@@ -97,6 +100,7 @@ export default function InsuranceProvidersPage() {
           <Plus size={20} />
           {editId ? 'Mod Nou Asigurător' : 'Adaugă Asigurător'}
         </button>
+        )}
       </div>
 
       {message && (
@@ -174,7 +178,7 @@ export default function InsuranceProvidersPage() {
                 <th className="px-6 py-4 font-semibold text-gray-700">ID</th>
                 <th className="px-6 py-4 font-semibold text-gray-700">Nume</th>
                 <th className="px-6 py-4 font-semibold text-gray-700">Contact</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Acțiuni</th>
+                {user.role === 'DOCTOR' && <th className="px-6 py-4 font-semibold text-gray-700">Acțiuni</th>}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -186,6 +190,7 @@ export default function InsuranceProvidersPage() {
                     {provider.name}
                   </td>
                   <td className="px-6 py-4 text-gray-600">{provider.contactNumber || '-'}</td>
+                  {user.role === 'DOCTOR' && (
                   <td className="px-6 py-4 flex gap-3">
                     <button 
                       onClick={() => handleEdit(provider)}
@@ -200,6 +205,7 @@ export default function InsuranceProvidersPage() {
                       <Trash2 size={18} />
                     </button>
                   </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -8,24 +8,27 @@ import java.util.Set;
 
 
 @Entity
+@Table(name = "DOCTOR")
 @Access(AccessType.FIELD)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Doctor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
-    @Column(nullable = false, length = 50)
+    
+    @Column(name = "NAME", nullable = false, length = 50)
     private String name;
-    @Column(nullable = false, length = 50)
+    
+    @Column(name = "OFFICE", nullable = false, length = 50)
     private String office;
 
-    @Column(nullable = false)
+    @Column(name = "NUMBER_OFPTODAYS", nullable = false)
     private Integer numberOfPTOdays;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idMedicalService", nullable = false)
+    @JoinColumn(name = "ID_MEDICAL_SERVICE", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private MedicalService medicalService;
 
@@ -34,7 +37,7 @@ public class Doctor {
     private Set<PaidTimeOff> doctorPaidTimeOffs;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "USER_ID", nullable = true)
     private User user;
 
     public Integer getId() {
@@ -82,6 +85,14 @@ public class Doctor {
 
     public void setDoctorPaidTimeOffs(final Set<PaidTimeOff> doctorPaidTimeOffs) {
         this.doctorPaidTimeOffs = doctorPaidTimeOffs;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
 }

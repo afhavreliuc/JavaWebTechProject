@@ -4,23 +4,25 @@ import com.unibuc.management.security.Role;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "USERS")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "USERNAME", unique = true, nullable = false)
     private String username;
 
-    @Column(nullable = false)
+    @Column(name = "PASSWORD", nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "ROLE", nullable = false)
     private Role role;
 
+    @Column(name = "ENABLED")
     private boolean enabled = true;
 
     public Long getId() {

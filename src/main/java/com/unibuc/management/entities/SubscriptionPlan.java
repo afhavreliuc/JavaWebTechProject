@@ -6,30 +6,28 @@ import java.math.BigDecimal;
 import java.util.Set;
 
 @Entity
+@Table(name = "SUBSCRIPTION_PLAN")
 @Access(AccessType.FIELD)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class SubscriptionPlan {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "NAME", nullable = false, length = 50)
     private String name;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "MONTHLY_FEE", nullable = false, precision = 10, scale = 2)
     private BigDecimal monthlyFee;
 
+    @Column(name = "DESCRIPTION")
     private String description;
 
     @ManyToMany(mappedBy = "includedInSubscriptions")
     @JsonIgnore
     private Set<MedicalService> services;
-
-    @OneToMany(mappedBy = "activeSubscription")
-    @JsonIgnore
-    private Set<Patient> patients;
 
     public Integer getId() {
         return id;
@@ -69,14 +67,6 @@ public class SubscriptionPlan {
 
     public void setServices(Set<MedicalService> services) {
         this.services = services;
-    }
-
-    public Set<Patient> getPatients() {
-        return patients;
-    }
-
-    public void setPatients(Set<Patient> patients) {
-        this.patients = patients;
     }
 }
 

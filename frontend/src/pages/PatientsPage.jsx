@@ -23,8 +23,14 @@ export default function PatientsPage() {
     try {
       const response = await patientService.getAll();
       setPatients(response.data);
+      console.log('Fetched patients:', response.data);
     } catch (error) {
       console.error('Error fetching patients:', error);
+      console.error('Error details:', error.response?.data, error.response?.status);
+      setMessage({ 
+        type: 'error', 
+        text: `Eroare la încărcarea pacienților: ${error.response?.data?.error || error.message || 'Serverul nu răspunde'}` 
+      });
     }
   };
 

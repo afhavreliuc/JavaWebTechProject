@@ -25,6 +25,10 @@ public class PatientService {
         return patientRepository.findById(id);
     }
 
+    public Optional<Patient> getPatientByUsername(String username) {
+        return patientRepository.findByUserUsername(username);
+    }
+
     public Patient createPatient(Patient patient) {
         return patientRepository.save(patient);
     }

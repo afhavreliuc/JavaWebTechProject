@@ -5,24 +5,25 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payment")
+@Table(name = "PAYMENT")
 public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
     private Long id;
 
-    @Column(name = "amount", precision = 10, scale = 2)
+    @Column(name = "AMOUNT", precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "payment_method", length = 50)
+    @Column(name = "PAYMENT_METHOD", length = 50)
     private String paymentMethod; // Ex: "Card", "Cash"
 
-    @Column(name = "payment_date")
+    @Column(name = "PAYMENT_DATE")
     private LocalDateTime paymentDate;
 
     @OneToOne
-    @JoinColumn(name = "appointment_id", referencedColumnName = "id")
+    @JoinColumn(name = "APPOINTMENT_ID", referencedColumnName = "ID")
     private Appointment appointment;
 
     public Payment() {

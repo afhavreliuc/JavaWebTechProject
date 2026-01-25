@@ -8,23 +8,24 @@ import java.time.OffsetDateTime;
 
 
 @Entity
+@Table(name = "PAID_TIME_OFF")
 @Access(AccessType.FIELD)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class PaidTimeOff {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(name = "PTO_FROM", nullable = false)
     private OffsetDateTime ptoFrom;
 
-    @Column(nullable = false)
+    @Column(name = "PTO_TO", nullable = false)
     private OffsetDateTime ptoTo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idDoctor", nullable = false)
+    @JoinColumn(name = "ID_DOCTOR", nullable = false)
     private Doctor doctor;
 
     public Integer getId() {

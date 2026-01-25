@@ -8,34 +8,35 @@ import java.util.Set;
 
 
 @Entity
+@Table(name = "MEDICAL_SERVICE")
 @Access(AccessType.FIELD)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class MedicalService {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "SPECIALIZATION", nullable = false, length = 100)
     private String specialization;
 
-    @Column(nullable = false)
+    @Column(name = "START_HOUR", nullable = false)
     private Integer startHour;
 
-    @Column(nullable = false)
+    @Column(name = "END_HOUR", nullable = false)
     private Integer endHour;
 
-    @Column(nullable = false)
+    @Column(name = "PRICE", nullable = false)
     private Double price;
 
-    @Column(nullable = false)
+    @Column(name = "RATING", nullable = false)
     private Double rating;
 
-    @Column(nullable = false)
+    @Column(name = "NR_OF_RATINGS", nullable = false)
     private Integer nrOfRatings;
 
     @OneToMany(mappedBy = "medicalService")
@@ -49,17 +50,17 @@ public class MedicalService {
 
     @ManyToMany
     @JoinTable(
-            name = "service_insurance_coverage",
-            joinColumns = @JoinColumn(name = "id_medical_service"),
-            inverseJoinColumns = @JoinColumn(name = "id_insurance_provider")
+            name = "SERVICE_INSURANCE_COVERAGE",
+            joinColumns = @JoinColumn(name = "ID_MEDICAL_SERVICE"),
+            inverseJoinColumns = @JoinColumn(name = "ID_INSURANCE_PROVIDER")
     )
     private Set<InsuranceProvider> coveredByInsurances;
 
     @ManyToMany
     @JoinTable(
-            name = "service_subscription_plan",
-            joinColumns = @JoinColumn(name = "id_medical_service"),
-            inverseJoinColumns = @JoinColumn(name = "id_subscription_plan")
+            name = "SERVICE_SUBSCRIPTION_PLAN",
+            joinColumns = @JoinColumn(name = "ID_MEDICAL_SERVICE"),
+            inverseJoinColumns = @JoinColumn(name = "ID_SUBSCRIPTION_PLAN")
     )
     private Set<SubscriptionPlan> includedInSubscriptions;
 

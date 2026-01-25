@@ -9,39 +9,40 @@ import java.util.Set;
 
 
 @Entity
+@Table(name = "PATIENT")
 @Access(AccessType.FIELD)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "medical_record", length = 4000)
+    @Column(name = "MEDICAL_RECORD", length = 4000)
     private String medicalRecord;
 
-    @Column(nullable = false)
+    @Column(name = "SUBSCRIPTION", nullable = false)
     private Boolean subscription;
 
-    @Column(nullable = false)
+    @Column(name = "AGE", nullable = false)
     private LocalDate age;
 
-    @Column(nullable = false)
+    @Column(name = "SEX", nullable = false)
     private Boolean sex;
 
     @OneToMany(mappedBy = "patient")
     private Set<Appointment> patientAppointments;
 
     @ManyToOne
-    @JoinColumn(name = "insurance_provider_id")
+    @JoinColumn(name = "INSURANCE_PROVIDER_ID")
     private InsuranceProvider insuranceProvider;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "USER_ID", nullable = true)
     private User user;
 
     public Integer getId() {
@@ -108,12 +109,12 @@ public class Patient {
         this.insuranceProvider = insuranceProvider;
     }
 
-    public SubscriptionPlan getActiveSubscription() {
-        return activeSubscription;
+    public User getUser() {
+        return user;
     }
 
-    public void setActiveSubscription(SubscriptionPlan activeSubscription) {
-        this.activeSubscription = activeSubscription;
+    public void setUser(User user) {
+        this.user = user;
     }
 
 }

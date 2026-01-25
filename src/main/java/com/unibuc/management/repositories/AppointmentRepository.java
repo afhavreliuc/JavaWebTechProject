@@ -24,4 +24,13 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     );
 
     List<Appointment> findByPatientId(Integer patientId);
+
+    @Query("""
+    SELECT a 
+    FROM Appointment a 
+    JOIN a.medicalService ms
+    JOIN ms.medicalServiceDoctors d
+    WHERE d.id = :doctorId
+""")
+    List<Appointment> findByDoctorId(@Param("doctorId") Integer doctorId);
 }

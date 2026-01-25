@@ -76,6 +76,10 @@ public class AppointmentService {
         return appointmentRepository.findByPatientId(patientId);
     }
 
+    public List<Appointment> getAppointmentsByDoctorId(Integer doctorId) {
+        return appointmentRepository.findByDoctorId(doctorId);
+    }
+
     public Appointment save(Appointment appointment) {
         return appointmentRepository.save(appointment);
     }

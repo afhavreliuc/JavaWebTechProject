@@ -49,4 +49,8 @@ public class DoctorService {
     public Optional<Doctor> getDoctorByMedicalService(Integer medicalServiceId) {
         return doctorRepository.findByMedicalServiceId(medicalServiceId); // Assuming there's a relation
     }
+
+    public Optional<Doctor> getDoctorByUsername(String username) {
+        return doctorRepository.findByUserUsername(username);
+    }
 }

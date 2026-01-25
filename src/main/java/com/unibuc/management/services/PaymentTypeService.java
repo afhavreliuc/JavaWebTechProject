@@ -45,7 +45,7 @@ public class PaymentTypeService {
                 if (paymentType.isPresent()) return paymentType;
             }
 
-            if (patient.getSubscription() || patient.getActiveSubscription() != null) {
+            if (patient.getSubscription()) {
                 paymentType = paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), false, true);
                 if (paymentType.isPresent()) return paymentType;
             }

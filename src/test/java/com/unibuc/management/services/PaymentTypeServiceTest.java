@@ -49,7 +49,6 @@ class PaymentTypeServiceTest {
         patient.setName("John Doe");
         patient.setInsuranceProvider(new InsuranceProvider());
         patient.setSubscription(false);
-        patient.setActiveSubscription(null);
 
         paymentType = new PaymentType();
         paymentType.setId(1);
@@ -110,7 +109,6 @@ class PaymentTypeServiceTest {
         // Test when patient has subscription but no insurance
         patient.setInsuranceProvider(null);
         patient.setSubscription(true);
-        patient.setActiveSubscription(new SubscriptionPlan());
 
         when(medicalServiceService.getMedicalServiceById(1)).thenReturn(Optional.of(medicalService));
         when(patientService.getPatientById(1)).thenReturn(Optional.of(patient));
@@ -134,7 +132,6 @@ class PaymentTypeServiceTest {
         // Test when patient has neither insurance nor subscription
         patient.setInsuranceProvider(null);
         patient.setSubscription(false);
-        patient.setActiveSubscription(null);
 
         when(medicalServiceService.getMedicalServiceById(1)).thenReturn(Optional.of(medicalService));
         when(patientService.getPatientById(1)).thenReturn(Optional.of(patient));
@@ -163,7 +160,7 @@ class PaymentTypeServiceTest {
         Optional<PaymentType> result = paymentTypeService.getPriceForPatient(1, 1);
 
         // Verify the result
-        assertNull(result);
+        assertTrue(result.isEmpty());
         verify(medicalServiceService, times(1)).getMedicalServiceById(1);
         verify(patientService, times(1)).getPatientById(1);
     }

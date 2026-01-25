@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { patientService, medicalServiceService, appointmentService } from '../services/api';
 import { Calendar, Clock, CheckCircle2, AlertCircle, Edit2, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 export default function AppointmentsPage() {
+  const { user } = useAuth();
   const [patients, setPatients] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
@@ -23,28 +26,37 @@ export default function AppointmentsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pRes, sRes] = await Promise.all([
-          patientService.getAll(),
-          medicalServiceService.getAll()
-        ]);
+        if (user.role === 'DOCTOR') {
+          const pRes = await patientService.getAll();
         setPatients(pRes.data);
+        }
+        
+        const sRes = await medicalServiceService.getAll();
         // Filtrăm doar serviciile care au cel puțin un doctor alocat
         const servicesWithDoctors = sRes.data.filter(s => s.medicalServiceDoctors && s.medicalServiceDoctors.length > 0);
         setServices(servicesWithDoctors);
+        
+        if (user.role === 'PATIENT' && user.patientId) {
+          setSelectedPatientId(user.patientId);
+        }
       } catch (error) {
         console.error('Error fetching initial data:', error);
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (selectedPatientId) {
+      if (user.role === 'PATIENT') {
       fetchPatientAppointments(selectedPatientId);
+      } else if (user.role === 'DOCTOR') {
+        fetchDoctorAppointments(user.doctorId);
+      }
     } else {
       setPatientAppointments([]);
     }
-  }, [selectedPatientId]);
+  }, [selectedPatientId, user]);
 
   const fetchPatientAppointments = async (id) => {
     try {
@@ -52,6 +64,15 @@ export default function AppointmentsPage() {
       setPatientAppointments(res.data);
     } catch (error) {
       console.error('Error fetching appointments:', error);
+    }
+  };
+
+  const fetchDoctorAppointments = async (id) => {
+    try {
+      const res = await axios.get(`http://localhost:8080/api/appointments/doctor/${id}`);
+      setPatientAppointments(res.data);
+    } catch (error) {
+      console.error('Error fetching doctor appointments:', error);
     }
   };
 
@@ -148,6 +169,11 @@ export default function AppointmentsPage() {
           </div>
         )}
 
+        {user.role === 'DOCTOR' ? (
+          <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
+            <p className="text-indigo-900 font-bold">Vizionezi programările tale ca medic.</p>
+          </div>
+        ) : (
         <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
           <label className="block text-sm font-bold text-indigo-900 mb-2">
             Selectează Pacientul <span className="text-blue-600">*</span>
@@ -156,17 +182,21 @@ export default function AppointmentsPage() {
             className="w-full border-none rounded-lg p-3 shadow-sm bg-white focus:ring-2 focus:ring-indigo-500"
             value={selectedPatientId}
             onChange={(e) => setSelectedPatientId(e.target.value)}
+              disabled={user.role === 'PATIENT'}
           >
             <option value="">Alege un pacient din listă...</option>
             {patients.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
           </select>
         </div>
+        )}
 
-        {selectedPatientId && (
+        {(selectedPatientId || user.role === 'DOCTOR') && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-700">Programările Pacientului</h3>
-              {!bookingMode && (
+              <h3 className="text-xl font-bold text-gray-700">
+                {user.role === 'DOCTOR' ? 'Programările Mele (Medic)' : 'Programările Pacientului'}
+              </h3>
+              {!bookingMode && user.role === 'PATIENT' && (
                 <button 
                   onClick={() => setBookingMode(true)}
                   className="bg-indigo-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-indigo-700 transition-all shadow-md"
@@ -300,6 +330,7 @@ export default function AppointmentsPage() {
                       <div>
                         <p className="font-bold text-gray-800">{appt.medicalService?.name}</p>
                         <p className="text-sm text-gray-500">{formatDateTime(appt.appointmentFrom)}</p>
+                        {user.role === 'DOCTOR' && <p className="text-xs text-indigo-600 font-medium">Pacient: {appt.patient?.name}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -312,7 +343,7 @@ export default function AppointmentsPage() {
                         <p className="text-xs text-gray-400 mt-1">ID: #{appt.id}</p>
                       </div>
                       
-                      {appt.status !== 'Completed' && (
+                      {appt.status !== 'Completed' && user.role === 'PATIENT' && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => handleEditClick(appt)}
@@ -335,7 +366,7 @@ export default function AppointmentsPage() {
                 ))}
                 {patientAppointments.length === 0 && (
                   <div className="text-center py-12 border-2 border-dashed rounded-2xl text-gray-400">
-                    Acest pacient nu are programări viitoare.
+                    {user.role === 'DOCTOR' ? 'Nu ai programări viitoare.' : 'Acest pacient nu are programări viitoare.'}
                   </div>
                 )}
               </div>
@@ -343,7 +374,7 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        {!selectedPatientId && (
+        {!selectedPatientId && user.role !== 'DOCTOR' && (
           <div className="text-center py-20 text-gray-400">
             <Calendar size={64} className="mx-auto mb-4 opacity-20" />
             <p className="text-lg">Selectează un pacient pentru a-i vedea sau crea programări.</p>

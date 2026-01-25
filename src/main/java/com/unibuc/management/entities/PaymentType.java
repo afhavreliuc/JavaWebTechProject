@@ -8,30 +8,31 @@ import java.util.Set;
 
 
 @Entity
+@Table(name = "PAYMENT_TYPE")
 @Access(AccessType.FIELD)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class PaymentType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false)
+    @Column(name = "ID", nullable = false, updatable = false)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(name = "IS_DOCTOR", nullable = false)
     private Boolean isDoctor;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "PRICE", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
-    @Column(nullable = false)
+    @Column(name = "WITH_INSURANCE", nullable = false)
     private Boolean withInsurance;
 
-    @Column(nullable = false)
+    @Column(name = "WITH_SUBSCRIPTION", nullable = false)
     private Boolean withSubscription;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    @JoinColumn(name = "idMedicalService", nullable = false)
+    @JoinColumn(name = "ID_MEDICAL_SERVICE", nullable = false)
     private MedicalService medicalService;
 
     public Integer getId() {
