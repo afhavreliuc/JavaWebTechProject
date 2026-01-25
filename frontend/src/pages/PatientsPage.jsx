@@ -37,6 +37,12 @@ export default function PatientsPage() {
     }
   };
 
+  const maxBirthDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 18);
+    return date.toISOString().split('T')[0];
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -167,12 +173,13 @@ export default function PatientsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">
-              Data nașterii <span className="text-blue-600">*</span>
+              Data de naștere <span className="text-blue-600">*</span>
             </label>
             <input 
               type="date" 
               required
               disabled={saving}
+              max={maxBirthDate()}
               className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
               value={formData.age}
               onChange={(e) => setFormData({...formData, age: e.target.value})}
