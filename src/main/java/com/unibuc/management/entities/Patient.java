@@ -40,9 +40,9 @@ public class Patient {
     @JoinColumn(name = "insurance_provider_id")
     private InsuranceProvider insuranceProvider;
 
-    @ManyToOne
-    @JoinColumn(name = "subscription_plan_id")
-    private SubscriptionPlan activeSubscription;
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     public Integer getId() {
         return id;

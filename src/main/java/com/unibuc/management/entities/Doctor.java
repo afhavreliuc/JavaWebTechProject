@@ -33,6 +33,10 @@ public class Doctor {
     @JsonIgnore
     private Set<PaidTimeOff> doctorPaidTimeOffs;
 
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     public Integer getId() {
         return id;
     }
