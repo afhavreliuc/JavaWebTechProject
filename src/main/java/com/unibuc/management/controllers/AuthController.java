@@ -13,6 +13,7 @@ import com.unibuc.management.services.DoctorService;
 import com.unibuc.management.services.PatientService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -41,20 +42,22 @@ public class AuthController {
     private final PatientService patientService;
     private final DoctorService doctorService;
     private final MedicalServiceRepository medicalServiceRepository;
-    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+    private final SecurityContextRepository securityContextRepository;
 
     public AuthController(AuthenticationManager authenticationManager,
                           UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
                           PatientService patientService,
                           DoctorService doctorService,
-                          MedicalServiceRepository medicalServiceRepository) {
+                          MedicalServiceRepository medicalServiceRepository,
+                          HttpSessionSecurityContextRepository securityContextRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.patientService = patientService;
         this.doctorService = doctorService;
         this.medicalServiceRepository = medicalServiceRepository;
+        this.securityContextRepository = securityContextRepository;
     }
 
     @GetMapping("/me")
@@ -125,21 +128,31 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, response);
-
-        return ResponseEntity.ok("Login successful");
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            
+            HttpSession session = httpRequest.getSession(true); // create session
+            securityContextRepository.saveContext(context, httpRequest, httpResponse);
+            System.out.println("Login successful for user: " + request.getUsername() + ", Session ID: " + session.getId());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Login successful");
+            response.put("username", request.getUsername());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Login failed: " + e.getMessage());
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+        }
     }
 
     @PostMapping("/logout")

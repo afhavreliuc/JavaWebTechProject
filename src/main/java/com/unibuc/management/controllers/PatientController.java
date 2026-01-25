@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,12 +26,15 @@ public class PatientController {
     }
 
     @GetMapping("/test")
-    public ResponseEntity<?> testEndpoint() {
+    public ResponseEntity<?> testEndpoint(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
         return ResponseEntity.ok(java.util.Map.of(
             "authenticated", auth != null && auth.isAuthenticated(),
             "username", auth != null ? auth.getName() : "anonymous",
-            "authorities", auth != null ? auth.getAuthorities().toString() : "none"
+            "authorities", auth != null ? auth.getAuthorities().toString() : "none",
+            "sessionId", session != null ? session.getId() : "no session",
+            "sessionIsNew", session != null ? session.isNew() : false
         ));
     }
 
