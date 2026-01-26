@@ -42,8 +42,8 @@ public class PatientController {
     @PreAuthorize("hasAnyRole('PATIENT', 'DOCTOR')")
     public ResponseEntity<?> createPatient(@RequestBody Patient patient) {
         try {
-            Patient savedPatient = patientService.createPatient(patient);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedPatient);
+        Patient savedPatient = patientService.createPatient(patient);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedPatient);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(java.util.Map.of("message", "Eroare internă la salvarea pacientului: " + e.getMessage()));

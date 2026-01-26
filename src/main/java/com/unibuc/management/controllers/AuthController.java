@@ -153,12 +153,27 @@ public class AuthController {
                 Doctor doctor = new Doctor();
                 String name = request.getFullName();
                 doctor.setName(name != null && !name.trim().isEmpty() ? name : "Dr. " + request.getUsername());
-                doctor.setOffice("Cabinet 101");
-                doctor.setNumberOfPtodays(21);
+                doctor.setOffice(request.getOffice() != null && !request.getOffice().trim().isEmpty() 
+                    ? request.getOffice() : "Cabinet 101");
+                doctor.setNumberOfPtodays(request.getNumberOfPTOdays() != null ? request.getNumberOfPTOdays() : 21);
                 
-                List<MedicalService> services = medicalServiceRepository.findAll();
-                if (!services.isEmpty()) {
-                    doctor.setMedicalService(services.get(0));
+                if (request.getMedicalServiceId() != null) {
+                    Optional<MedicalService> serviceOpt = medicalServiceRepository.findById(request.getMedicalServiceId());
+                    if (serviceOpt.isPresent()) {
+                        doctor.setMedicalService(serviceOpt.get());
+                    } else {
+                        // Fallback to first available service
+                        List<MedicalService> services = medicalServiceRepository.findAll();
+                        if (!services.isEmpty()) {
+                            doctor.setMedicalService(services.get(0));
+                        }
+                    }
+                } else {
+                    // Fallback to first available service
+                    List<MedicalService> services = medicalServiceRepository.findAll();
+                    if (!services.isEmpty()) {
+                        doctor.setMedicalService(services.get(0));
+                    }
                 }
                 
                 doctor.setUser(savedUser);

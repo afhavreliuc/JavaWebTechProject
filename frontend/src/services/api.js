@@ -24,6 +24,7 @@ export const doctorService = {
   create: (doctor) => api.post('/doctors', doctor),
   update: (id, doctor) => api.put(`/doctors/${id}`, doctor),
   delete: (id) => api.delete(`/doctors/${id}`),
+  schedulePTO: (params) => api.post('/doctor-schedule/schedulePTO', null, { params }),
 };
 
 export const appointmentService = {
@@ -31,6 +32,7 @@ export const appointmentService = {
   getAvailableSlots: (medicalServiceId, date) => 
     api.get('/appointments/available-times', { params: { medicalServiceId, date } }),
   getByPatientId: (patientId) => api.get(`/appointments/patient/${patientId}`),
+  getByDoctorId: (doctorId) => api.get(`/appointments/doctor/${doctorId}`),
   submitFeedback: (appointmentId, rating) => 
     api.post(`/appointments/${appointmentId}/feedback`, null, { params: { rating } }),
   delete: (id) => api.delete(`/appointments/${id}`),

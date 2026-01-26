@@ -47,10 +47,14 @@ export default function AppointmentsPage() {
   }, [user]);
 
   useEffect(() => {
-    if (selectedPatientId) {
-      if (user.role === 'PATIENT') {
+    if (user.role === 'PATIENT' && selectedPatientId) {
       fetchPatientAppointments(selectedPatientId);
-      } else if (user.role === 'DOCTOR') {
+    } else if (user.role === 'DOCTOR') {
+      if (selectedPatientId) {
+        // Dacă un medic a selectat un pacient specific, vedem programările acelui pacient (filtrate de backend pentru acest medic)
+        fetchPatientAppointments(selectedPatientId);
+      } else if (user.doctorId) {
+        // Dacă nu e selectat niciun pacient, medicul vede toate programările sale
         fetchDoctorAppointments(user.doctorId);
       }
     } else {
@@ -69,7 +73,7 @@ export default function AppointmentsPage() {
 
   const fetchDoctorAppointments = async (id) => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/appointments/doctor/${id}`);
+      const res = await appointmentService.getByDoctorId(id);
       setPatientAppointments(res.data);
     } catch (error) {
       console.error('Error fetching doctor appointments:', error);
@@ -92,12 +96,24 @@ export default function AppointmentsPage() {
     }
   };
 
+  const refreshAppointments = () => {
+    if (user.role === 'PATIENT' && selectedPatientId) {
+      fetchPatientAppointments(selectedPatientId);
+    } else if (user.role === 'DOCTOR') {
+      if (selectedPatientId) {
+        fetchPatientAppointments(selectedPatientId);
+      } else if (user.doctorId) {
+        fetchDoctorAppointments(user.doctorId);
+      }
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Ești sigur că vrei să ștergi această programare?')) return;
     try {
       await appointmentService.delete(id);
       setMessage({ type: 'success', text: 'Programare ștearsă cu succes!' });
-      fetchPatientAppointments(selectedPatientId);
+      refreshAppointments();
     } catch (error) {
       console.error('Error deleting appointment:', error);
       setMessage({ 
@@ -135,7 +151,7 @@ export default function AppointmentsPage() {
       setBookingMode(false);
       setEditingAppointment(null);
       setSearchPerformed(false);
-      fetchPatientAppointments(selectedPatientId);
+      refreshAppointments();
     } catch (error) {
       console.error('Error booking/updating appointment:', error);
       const backendError = typeof error.response?.data === 'string' ? error.response.data : null;
@@ -169,26 +185,24 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        {user.role === 'DOCTOR' ? (
-          <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
-            <p className="text-indigo-900 font-bold">Vizionezi programările tale ca medic.</p>
-          </div>
-        ) : (
         <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
           <label className="block text-sm font-bold text-indigo-900 mb-2">
-            Selectează Pacientul <span className="text-blue-600">*</span>
+            {user.role === 'DOCTOR' ? 'Filtrează după Pacient' : 'Selectează Pacientul'} <span className="text-blue-600">*</span>
           </label>
           <select 
             className="w-full border-none rounded-lg p-3 shadow-sm bg-white focus:ring-2 focus:ring-indigo-500"
             value={selectedPatientId}
             onChange={(e) => setSelectedPatientId(e.target.value)}
-              disabled={user.role === 'PATIENT'}
+            disabled={user.role === 'PATIENT'}
           >
-            <option value="">Alege un pacient din listă...</option>
+            {user.role === 'DOCTOR' ? (
+              <option value="">Toți pacienții (Programările Mele)</option>
+            ) : (
+              <option value="">Alege un pacient din listă...</option>
+            )}
             {patients.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
           </select>
         </div>
-        )}
 
         {(selectedPatientId || user.role === 'DOCTOR') && (
           <div>

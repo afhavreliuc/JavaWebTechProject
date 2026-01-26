@@ -9,6 +9,10 @@ public class RegisterRequest {
     private String fullName;
     private LocalDate age;
     private Boolean sex;
+    // Doctor-specific fields
+    private String office;
+    private Integer numberOfPTOdays;
+    private Integer medicalServiceId;
 
     public String getUsername() {
         return username;
@@ -56,5 +60,29 @@ public class RegisterRequest {
 
     public void setSex(Boolean sex) {
         this.sex = sex;
+    }
+
+    public String getOffice() {
+        return office;
+    }
+
+    public void setOffice(String office) {
+        this.office = office;
+    }
+
+    public Integer getNumberOfPTOdays() {
+        return numberOfPTOdays;
+    }
+
+    public void setNumberOfPTOdays(Integer numberOfPTOdays) {
+        this.numberOfPTOdays = numberOfPTOdays;
+    }
+
+    public Integer getMedicalServiceId() {
+        return medicalServiceId;
+    }
+
+    public void setMedicalServiceId(Integer medicalServiceId) {
+        this.medicalServiceId = medicalServiceId;
     }
 }

@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { doctorService, medicalServiceService } from '../services/api';
 import { UserCog, Trash2, Edit2, Plus, CheckCircle2, AlertCircle, Loader2, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
 
 export default function DoctorsPage() {
   const { user } = useAuth();
+  const isDoctor = user?.role === 'DOCTOR';
   const [doctors, setDoctors] = useState([]);
+  const [currentDoctor, setCurrentDoctor] = useState(null);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -31,8 +32,17 @@ export default function DoctorsPage() {
         doctorService.getAll(),
         medicalServiceService.getAll()
       ]);
+      
       setDoctors(doctorsRes.data);
       setServices(servicesRes.data);
+
+      if (isDoctor && user?.doctorId) {
+        const myProfile = doctorsRes.data.find(d => d.id === user.doctorId);
+        if (myProfile) {
+          setCurrentDoctor(myProfile);
+        }
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -42,7 +52,7 @@ export default function DoctorsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleEdit = (doctor) => {
     setEditId(doctor.id);
@@ -79,7 +89,12 @@ export default function DoctorsPage() {
       setShowForm(false);
       setEditId(null);
       setFormData({ name: '', office: '', numberOfPTOdays: 21, medicalServiceId: '' });
-      fetchData();
+      await fetchData();
+      // Refresh currentDoctor for doctor users
+      if (isDoctor && user?.doctorId) {
+        const response = await doctorService.getById(user.doctorId);
+        setCurrentDoctor(response.data);
+      }
     } catch (error) {
       console.error('Error saving doctor:', error);
       setMessage({ 
@@ -92,11 +107,23 @@ export default function DoctorsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Ești sigur că vrei să ștergi acest doctor?')) {
+    const isSelf = id === user?.doctorId;
+    const confirmMsg = isSelf 
+      ? 'Ești sigur că vrei să îți ștergi propriul cont? Această acțiune te va deloga și va șterge definitiv datele tale.'
+      : 'Ești sigur că vrei să ștergi acest medic? Această acțiune va șterge și contul de utilizator asociat acestuia.';
+
+    if (window.confirm(confirmMsg)) {
       try {
         await doctorService.delete(id);
-        setMessage({ type: 'success', text: 'Doctor șters cu succes!' });
-        fetchData();
+        setMessage({ type: 'success', text: isSelf ? 'Contul tău a fost șters.' : 'Medic șters cu succes!' });
+        
+        if (isSelf) {
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else {
+          fetchData();
+        }
       } catch (error) {
         console.error('Error deleting doctor:', error);
         setMessage({ 
@@ -113,12 +140,10 @@ export default function DoctorsPage() {
     try {
       const start = new Date(ptoData.startDate).toISOString();
       const end = new Date(ptoData.endDate).toISOString();
-      await axios.post(`http://localhost:8080/api/doctor-schedule/schedulePTO`, null, {
-        params: {
-          doctorId: user.doctorId,
-          startDate: start,
-          endDate: end
-        }
+      await doctorService.schedulePTO({
+        doctorId: user.doctorId,
+        startDate: start,
+        endDate: end
       });
       setMessage({ type: 'success', text: 'Concediu programat cu succes!' });
       setShowPTOForm(false);
@@ -134,9 +159,11 @@ export default function DoctorsPage() {
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Gestionare Doctori</h2>
+        <h2 className="text-3xl font-bold text-gray-800">
+          {isDoctor ? 'Profilul Meu' : 'Gestionare Doctori'}
+        </h2>
         <div className="flex gap-2">
-          {user.role === 'DOCTOR' && (
+          {isDoctor && (
             <button 
               onClick={() => setShowPTOForm(!showPTOForm)}
               className="bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-700"
@@ -145,21 +172,14 @@ export default function DoctorsPage() {
               Programează Concediu
             </button>
           )}
-          {user.role === 'DOCTOR' && (
-        <button 
-          onClick={() => {
-            if (showForm && editId) {
-              setEditId(null);
-              setFormData({ name: '', office: '', numberOfPTOdays: 21, medicalServiceId: '' });
-            } else {
-              setShowForm(!showForm);
-            }
-          }}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
-        >
-          <Plus size={20} />
-          {editId ? 'Mod Nou Doctor' : 'Adaugă Doctor'}
-        </button>
+          {isDoctor && !showForm && (
+            <button 
+              onClick={() => currentDoctor && handleEdit(currentDoctor)}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
+            >
+              <Edit2 size={20} />
+              Editează Profilul
+            </button>
           )}
         </div>
       </div>
@@ -219,7 +239,7 @@ export default function DoctorsPage() {
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-indigo-100 ring-2 ring-indigo-500/10">
           <h3 className="col-span-2 text-lg font-bold text-indigo-900 mb-2 border-b pb-2">
-            {editId ? `Editare Doctor #${editId}` : 'Adăugare Doctor Nou'}
+            {isDoctor ? 'Editează Profilul Tău' : (editId ? `Editare Doctor #${editId}` : 'Adăugare Doctor Nou')}
           </h3>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">
@@ -313,53 +333,99 @@ export default function DoctorsPage() {
       {loading ? (
         <div className="text-center py-10">Se încarcă...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {doctors.map((doctor) => (
-            <div key={doctor.id} className="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500 hover:shadow-lg transition-shadow">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{doctor.name || `Dr. #${doctor.id}`}</h3>
-                  <p className="text-indigo-600 font-medium">{doctor.medicalService?.name || 'Fără serviciu'}</p>
+        <div className="space-y-12">
+          {isDoctor && currentDoctor && (
+            <section>
+              <h3 className="text-xl font-bold text-gray-700 mb-4 border-b pb-2">Profilul Meu</h3>
+              <div className="bg-white rounded-xl shadow-md p-8 border-l-4 border-indigo-600">
+                <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+                  <div className="h-20 w-20 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <UserCog size={40} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">{currentDoctor.name}</h3>
+                    <p className="text-gray-600">ID: #{currentDoctor.id}</p>
+                  </div>
                 </div>
-                {user.role === 'DOCTOR' && (
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleEdit(doctor)}
-                    className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-                      title={user.doctorId === doctor.id ? "Editează datele tale" : "Editează doctor"}
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(doctor.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      title={user.doctorId === doctor.id ? "Șterge contul tău de doctor" : "Șterge doctor"}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                )}
-              </div>
-              
-              <div className="mt-4 space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Cabinet:</span>
-                  <span className="font-semibold text-gray-800">{doctor.office}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Zile PTO rămase:</span>
-                  <span className="font-semibold text-gray-800">{doctor.numberOfPtodays}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Specializare:</span>
-                  <span className="font-semibold text-gray-800">{doctor.medicalService?.specialization}</span>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Cabinet / Oficiu</label>
+                    <p className="text-gray-900 mt-1">{currentDoctor.office}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Zile PTO rămase</label>
+                    <p className="text-gray-900 mt-1">{currentDoctor.numberOfPtodays}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Specializare</label>
+                    <p className="text-indigo-600 font-medium mt-1">
+                      {currentDoctor.medicalService?.name || 'Fără serviciu'}
+                    </p>
+                    {currentDoctor.medicalService?.specialization && (
+                      <p className="text-gray-600 text-sm mt-1">{currentDoctor.medicalService.specialization}</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          {doctors.length === 0 && (
-            <div className="col-span-2 text-center py-10 text-gray-500">Nu există doctori înregistrați.</div>
+            </section>
           )}
+
+          <section>
+            <h3 className="text-xl font-bold text-gray-700 mb-4 border-b pb-2">
+              {isDoctor ? 'Toți Medicii din Clinică' : 'Listă Medici'}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {doctors.map((doctor) => (
+                <div key={doctor.id} className={`bg-white p-6 rounded-xl shadow-md border-l-4 hover:shadow-lg transition-shadow ${doctor.id === user?.doctorId ? 'border-indigo-600 bg-indigo-50/30' : 'border-gray-300'}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {doctor.name || `Dr. #${doctor.id}`}
+                        {doctor.id === user?.doctorId && <span className="ml-2 text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">TU</span>}
+                      </h3>
+                      <p className="text-indigo-600 font-medium">{doctor.medicalService?.name || 'Fără serviciu'}</p>
+                    </div>
+                    {isDoctor && (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleEdit(doctor)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                          title={user.doctorId === doctor.id ? "Editează datele tale" : "Editează doctor"}
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(doctor.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                          title={user.doctorId === doctor.id ? "Șterge contul tău de doctor" : "Șterge doctor"}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4 space-y-2 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Cabinet:</span>
+                      <span className="font-semibold text-gray-800">{doctor.office}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Zile PTO rămase:</span>
+                      <span className="font-semibold text-gray-800">{doctor.numberOfPtodays}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Specializare:</span>
+                      <span className="font-semibold text-gray-800">{doctor.medicalService?.specialization}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {doctors.length === 0 && (
+                <div className="col-span-2 text-center py-10 text-gray-500">Nu există doctori înregistrați.</div>
+              )}
+            </div>
+          </section>
         </div>
       )}
     </div>

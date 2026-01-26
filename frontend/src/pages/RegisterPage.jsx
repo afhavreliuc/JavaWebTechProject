@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { UserPlus, Lock, User as UserIcon, ShieldCheck, Calendar, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { UserPlus, Lock, User as UserIcon, ShieldCheck, Calendar, Users, Building2, Briefcase } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api, { medicalServiceService } from '../services/api';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -10,9 +10,27 @@ export default function RegisterPage() {
   const [age, setAge] = useState('');
   const [sex, setSex] = useState(true);
   const [role, setRole] = useState('PATIENT');
+  const [office, setOffice] = useState('');
+  const [numberOfPTOdays, setNumberOfPTOdays] = useState(21);
+  const [medicalServiceId, setMedicalServiceId] = useState('');
+  const [medicalServices, setMedicalServices] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load medical services when component mounts or when role changes to DOCTOR
+    medicalServiceService.getAll()
+      .then(response => {
+        if (response.data && Array.isArray(response.data)) {
+          setMedicalServices(response.data);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching medical services:', err);
+        setError('Nu s-au putut încărca specializările. Te rugăm să reîmprospătezi pagina.');
+      });
+  }, []);
 
   const calculateAge = (birthDate) => {
     if (!birthDate) return null;
@@ -42,14 +60,25 @@ export default function RegisterPage() {
     }
     
     try {
-      await axios.post('http://localhost:8080/auth/register', { 
+      const payload = {
         username, 
         password,
         fullName,
         age: age || null,
         sex,
-        role 
-      });
+        role
+      };
+      
+      if (role === 'PATIENT') {
+        payload.age = age || null;
+        payload.sex = sex;
+      } else if (role === 'DOCTOR') {
+        payload.office = office;
+        payload.numberOfPTOdays = parseInt(numberOfPTOdays);
+        payload.medicalServiceId = medicalServiceId ? parseInt(medicalServiceId) : null;
+      }
+      
+      await api.post('http://localhost:8080/auth/register', payload);
       navigate('/login', { state: { message: 'Cont creat cu succes! Te poți autentifica acum.' } });
     } catch (err) {
       const errorMessage = typeof err.response?.data === 'string' 
@@ -123,41 +152,45 @@ export default function RegisterPage() {
               />
             </div>
 
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                <Calendar size={18} />
-              </div>
-              <input
-                type="date"
-                required
-                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Data Nașterii"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                max={role === 'PATIENT' ? new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0] : undefined}
-              />
-            </div>
+            {role === 'PATIENT' && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Calendar size={18} />
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Data Nașterii"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                  />
+                </div>
 
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                <Users size={18} />
-              </div>
-              <select
-                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white"
-                value={sex}
-                onChange={(e) => setSex(e.target.value === 'true')}
-              >
-                <option value="true">Masculin</option>
-                <option value="false">Feminin</option>
-              </select>
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Users size={18} />
+                  </div>
+                  <select
+                    className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white"
+                    value={sex}
+                    onChange={(e) => setSex(e.target.value === 'true')}
+                  >
+                    <option value="true">Masculin</option>
+                    <option value="false">Feminin</option>
+                  </select>
+                </div>
+              </>
+            )}
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                 <ShieldCheck size={18} />
               </div>
               <select
-                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white"
+                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
               >
@@ -165,6 +198,62 @@ export default function RegisterPage() {
                 <option value="DOCTOR">Doctor</option>
               </select>
             </div>
+            
+            {role === 'DOCTOR' && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Building2 size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Cabinet / Oficiu"
+                    value={office}
+                    onChange={(e) => setOffice(e.target.value)}
+                  />
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Calendar size={18} />
+                  </div>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Zile Concediu (PTO)"
+                    value={numberOfPTOdays}
+                    onChange={(e) => setNumberOfPTOdays(e.target.value)}
+                  />
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Briefcase size={18} />
+                  </div>
+                  <select
+                    required
+                    className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white"
+                    value={medicalServiceId}
+                    onChange={(e) => setMedicalServiceId(e.target.value)}
+                    disabled={loading || medicalServices.length === 0}
+                  >
+                    <option value="">Selectează Specializarea</option>
+                    {medicalServices.map(service => (
+                      <option key={service.id} value={service.id}>
+                        {service.name} ({service.specialization})
+                      </option>
+                    ))}
+                  </select>
+                  {medicalServices.length === 0 && !loading && (
+                    <p className="text-xs text-gray-500 mt-1 px-10">Se încarcă specializările...</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div>

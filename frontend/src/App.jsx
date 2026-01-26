@@ -55,7 +55,7 @@ function AppContent() {
                     )}
                     <Link to="/doctors" className="flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
                       <UserCog size={18} />
-                      Doctori
+                      {user.role === 'DOCTOR' ? 'Profilul Meu' : 'Doctori'}
                     </Link>
                     <Link to="/appointments" className="flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
                       <CalendarDays size={18} />
@@ -148,11 +148,18 @@ function AppContent() {
                     </Link>
                     )}
                     {user.role === 'DOCTOR' && (
+                    <>
+                    <Link to="/doctors" className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border-b-4 border-indigo-500">
+                      <UserCog className="mx-auto text-indigo-600 mb-4" size={40} />
+                      <h3 className="font-bold text-lg text-gray-800">Profilul Meu</h3>
+                      <p className="text-sm text-gray-500 mt-2">Vizualizează și editează detaliile tale profesionale</p>
+                    </Link>
                     <Link to="/patients" className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border-b-4 border-indigo-500">
                       <Users className="mx-auto text-indigo-600 mb-4" size={40} />
                       <h3 className="font-bold text-lg text-gray-800">Pacienți</h3>
                       <p className="text-sm text-gray-500 mt-2">Gestiune baze de date pacienți și istoric</p>
                     </Link>
+                    </>
                     )}
                     <Link to="/appointments" className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border-b-4 border-indigo-500">
                       <CalendarDays className="mx-auto text-indigo-600 mb-4" size={40} />
