@@ -10,32 +10,6 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for debugging
-api.interceptors.request.use(
-  (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    console.error('API Response Error:', error.response?.status, error.response?.data);
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      console.error('Authentication/Authorization error. User might not be logged in or lacks permissions.');
-    }
-    return Promise.reject(error);
-  }
-);
-
 export const patientService = {
   getAll: () => api.get('/patients'),
   getById: (id) => api.get(`/patients/${id}`),
@@ -85,4 +59,3 @@ export const insuranceProviderService = {
 };
 
 export default api;
-

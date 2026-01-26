@@ -72,9 +72,43 @@ public class AuthController {
         userData.put("role", user.getRole());
 
         if (user.getRole() == Role.PATIENT) {
-            patientService.getPatientByUsername(username).ifPresent(p -> userData.put("patientId", p.getId()));
+            Optional<Patient> patientOpt = patientService.getPatientByUsername(username);
+            
+            if (patientOpt.isEmpty()) {
+                patientOpt = patientService.getAllPatients().stream()
+                        .filter(p -> p.getName().equalsIgnoreCase(username))
+                        .findFirst();
+                
+                if (patientOpt.isPresent()) {
+                    Patient p = patientOpt.get();
+                    if (p.getUser() == null) {
+                        p.setUser(user);
+                        patientService.updatePatient(p.getId(), p);
+                    }
+                }
+            }
+            
+            patientOpt.ifPresent(p -> userData.put("patientId", p.getId()));
         } else if (user.getRole() == Role.DOCTOR) {
-            doctorService.getDoctorByUsername(username).ifPresent(d -> userData.put("doctorId", d.getId()));
+            Optional<Doctor> doctorOpt = doctorService.getDoctorByUsername(username);
+            
+            // Fallback for users registered before the link was implemented
+            if (doctorOpt.isEmpty()) {
+                doctorOpt = doctorService.getAllDoctors().stream()
+                        .filter(d -> d.getName().equalsIgnoreCase(username) || d.getName().equalsIgnoreCase("Dr. " + username))
+                        .findFirst();
+                
+                // Link them now for future requests
+                if (doctorOpt.isPresent()) {
+                    Doctor d = doctorOpt.get();
+                    if (d.getUser() == null) {
+                        d.setUser(user);
+                        doctorService.updateDoctor(d.getId(), d);
+                    }
+                }
+            }
+            
+            doctorOpt.ifPresent(d -> userData.put("doctorId", d.getId()));
         }
 
         return ResponseEntity.ok(userData);
@@ -97,16 +131,28 @@ public class AuthController {
 
         try {
             if (role == Role.PATIENT) {
+                // Validate age for patients - must be at least 18 years old
+                if (request.getAge() != null) {
+                    java.time.LocalDate today = java.time.LocalDate.now();
+                    java.time.Period period = java.time.Period.between(request.getAge(), today);
+                    if (period.getYears() < 18) {
+                        userRepository.delete(savedUser);
+                        return ResponseEntity.badRequest().body("Pacienții trebuie să aibă minim 18 ani pentru a se înregistra.");
+                    }
+                }
+                
                 Patient patient = new Patient();
-                patient.setName(request.getUsername());
-                patient.setAge(java.time.LocalDate.now().minusYears(20));
-                patient.setSex(true);
+                String name = request.getFullName();
+                patient.setName(name != null && !name.trim().isEmpty() ? name : request.getUsername());
+                patient.setAge(request.getAge() != null ? request.getAge() : java.time.LocalDate.now().minusYears(20));
+                patient.setSex(request.getSex() != null ? request.getSex() : true);
                 patient.setSubscription(false);
                 patient.setUser(savedUser);
                 patientService.createPatient(patient);
             } else if (role == Role.DOCTOR) {
                 Doctor doctor = new Doctor();
-                doctor.setName("Dr. " + request.getUsername());
+                String name = request.getFullName();
+                doctor.setName(name != null && !name.trim().isEmpty() ? name : "Dr. " + request.getUsername());
                 doctor.setOffice("Cabinet 101");
                 doctor.setNumberOfPtodays(21);
                 
@@ -130,27 +176,25 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
-                            request.getPassword()
-                    )
-            );
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
+        );
 
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
             
-            HttpSession session = httpRequest.getSession(true); // create session
+            httpRequest.getSession(true);
             securityContextRepository.saveContext(context, httpRequest, httpResponse);
-            System.out.println("Login successful for user: " + request.getUsername() + ", Session ID: " + session.getId());
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
             response.put("username", request.getUsername());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("Login failed: " + e.getMessage());
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
         }
     }

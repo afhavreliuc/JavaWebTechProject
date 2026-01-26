@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { patientService, insuranceProviderService } from '../services/api';
-import { UserPlus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Edit2, CheckCircle2, AlertCircle, Loader2, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function PatientsPage() {
+  const { user } = useAuth();
+  const isPatient = user?.role === 'PATIENT';
   const [patients, setPatients] = useState([]);
+  const [currentPatient, setCurrentPatient] = useState(null);
   const [insuranceProviders, setInsuranceProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -21,12 +25,16 @@ export default function PatientsPage() {
 
   const fetchPatients = async () => {
     try {
+      if (isPatient && user?.patientId) {
+        const response = await patientService.getById(user.patientId);
+        setCurrentPatient(response.data);
+        setPatients([response.data]);
+      } else {
       const response = await patientService.getAll();
       setPatients(response.data);
-      console.log('Fetched patients:', response.data);
+      }
     } catch (error) {
       console.error('Error fetching patients:', error);
-      console.error('Error details:', error.response?.data, error.response?.status);
       setMessage({ 
         type: 'error', 
         text: `Eroare la încărcarea pacienților: ${error.response?.data?.error || error.message || 'Serverul nu răspunde'}` 
@@ -59,9 +67,14 @@ export default function PatientsPage() {
       setLoading(false);
     };
     loadData();
-  }, []);
+  }, [user]);
 
   const handleEdit = (patient) => {
+    // For patients, they can only edit their own profile
+    if (isPatient && patient.id !== user?.patientId) {
+      setMessage({ type: 'error', text: 'Nu puteți edita profilul altui pacient.' });
+      return;
+    }
     setEditId(patient.id);
     setFormData({
       name: patient.name,
@@ -102,7 +115,12 @@ export default function PatientsPage() {
       setShowForm(false);
       setEditId(null);
       setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
-      fetchPatients();
+      await fetchPatients();
+      // Refresh currentPatient for patient users
+      if (isPatient && user?.patientId) {
+        const response = await patientService.getById(user.patientId);
+        setCurrentPatient(response.data);
+      }
     } catch (error) {
       console.error('Error saving patient:', error);
       setMessage({ 
@@ -130,24 +148,22 @@ export default function PatientsPage() {
     }
   };
 
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Gestionare Pacienți</h2>
+        <h2 className="text-3xl font-bold text-gray-800">
+          {isPatient ? 'Profilul Meu' : 'Gestionare Pacienți'}
+        </h2>
+        {isPatient && !showForm && (
         <button 
-          onClick={() => {
-            if (showForm && editId) {
-              setEditId(null);
-              setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
-            } else {
-              setShowForm(!showForm);
-            }
-          }}
+            onClick={() => currentPatient && handleEdit(currentPatient)}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
         >
-          <UserPlus size={20} />
-          {editId ? 'Mod Nou Pacient' : 'Adaugă Pacient'}
+            <Edit2 size={20} />
+            Editează Profilul
         </button>
+        )}
       </div>
 
       {message && (
@@ -162,7 +178,7 @@ export default function PatientsPage() {
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 grid grid-cols-2 gap-4 border border-indigo-100 ring-2 ring-indigo-500/10">
           <h3 className="col-span-2 text-lg font-bold text-indigo-900 mb-2 border-b pb-2">
-            {editId ? `Editare Pacient #${editId}` : 'Adăugare Pacient Nou'}
+            {isPatient ? 'Editează Profilul Tău' : (editId ? `Editare Pacient #${editId}` : 'Adăugare Pacient Nou')}
           </h3>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">
@@ -184,12 +200,15 @@ export default function PatientsPage() {
             <input 
               type="date" 
               required
-              disabled={saving}
+              disabled={saving || isPatient}
               max={maxBirthDate()}
-              className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100"
               value={formData.age}
               onChange={(e) => setFormData({...formData, age: e.target.value})}
             />
+            {isPatient && (
+              <p className="text-xs text-gray-500">Data nașterii nu poate fi modificată</p>
+            )}
           </div>
           <div className="flex flex-col gap-1 col-span-2">
             <label className="text-sm font-semibold text-gray-600">Istoric Medical</label>
@@ -272,6 +291,46 @@ export default function PatientsPage() {
 
       {loading ? (
         <div className="text-center py-10">Se încarcă...</div>
+      ) : isPatient && currentPatient ? (
+        <div className="bg-white rounded-xl shadow-md p-8">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+            <div className="h-20 w-20 bg-indigo-100 rounded-full flex items-center justify-center">
+              <User size={40} className="text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">{currentPatient.name}</h3>
+              <p className="text-gray-600">ID: #{currentPatient.id}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Data de naștere</label>
+              <p className="text-gray-900 mt-1">{currentPatient.age}</p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Sex</label>
+              <p className="text-gray-900 mt-1">{currentPatient.sex ? 'Masculin' : 'Feminin'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Abonament</label>
+              <p className="mt-1">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${currentPatient.subscription ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+                  {currentPatient.subscription ? 'Da' : 'Nu'}
+                </span>
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Asigurător</label>
+              <p className="text-gray-900 mt-1">{currentPatient.insuranceProvider ? currentPatient.insuranceProvider.name : 'Fără asigurare'}</p>
+            </div>
+            {currentPatient.medicalRecord && (
+              <div className="col-span-2">
+                <label className="text-sm font-semibold text-gray-600">Istoric Medical</label>
+                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{currentPatient.medicalRecord}</p>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <table className="w-full text-left">
@@ -310,12 +369,14 @@ export default function PatientsPage() {
                     >
                       <Edit2 size={18} />
                     </button>
+                    {!isPatient && (
                     <button 
                       onClick={() => handleDelete(patient.id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       <Trash2 size={18} />
                     </button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -6,12 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -44,14 +41,6 @@ public class DoctorController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<Doctor> updateDoctor(@PathVariable Integer id, @RequestBody Doctor doctorDetails) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = authentication.getName();
-        Optional<Doctor> currentDoctorOpt = doctorService.getDoctorByUsername(currentUsername);
-
-        if (currentDoctorOpt.isEmpty() || !currentDoctorOpt.get().getId().equals(id)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
         Doctor updatedDoctor = doctorService.updateDoctor(id, doctorDetails);
         if (updatedDoctor == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -62,14 +51,6 @@ public class DoctorController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<Void> deleteDoctor(@PathVariable Integer id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = authentication.getName();
-        Optional<Doctor> currentDoctorOpt = doctorService.getDoctorByUsername(currentUsername);
-
-        if (currentDoctorOpt.isEmpty() || !currentDoctorOpt.get().getId().equals(id)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
         boolean isDeleted = doctorService.deleteDoctor(id);
         if (!isDeleted) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

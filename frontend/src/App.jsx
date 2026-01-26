@@ -41,6 +41,12 @@ function AppContent() {
                   
                 {user && (
                   <nav className="hidden md:flex items-center gap-2">
+                    {user.role === 'PATIENT' && (
+                    <Link to="/patients" className="flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
+                      <Users size={18} />
+                      Profilul Meu
+                    </Link>
+                    )}
                     {user.role === 'DOCTOR' && (
                     <Link to="/patients" className="flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
                       <Users size={18} />
@@ -102,7 +108,7 @@ function AppContent() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/patients" element={
-              <ProtectedRoute roles={['DOCTOR']}>
+              <ProtectedRoute roles={['PATIENT', 'DOCTOR']}>
                 <PatientsPage />
               </ProtectedRoute>
             } />
@@ -134,6 +140,13 @@ function AppContent() {
                     Sistem integrat pentru gestionarea clinicilor medicale. 
                   </p>
                   <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    {user.role === 'PATIENT' && (
+                    <Link to="/patients" className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border-b-4 border-indigo-500">
+                      <Users className="mx-auto text-indigo-600 mb-4" size={40} />
+                      <h3 className="font-bold text-lg text-gray-800">Profilul Meu</h3>
+                      <p className="text-sm text-gray-500 mt-2">Vizualizează și editează detaliile tale personale</p>
+                    </Link>
+                    )}
                     {user.role === 'DOCTOR' && (
                     <Link to="/patients" className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border-b-4 border-indigo-500">
                       <Users className="mx-auto text-indigo-600 mb-4" size={40} />

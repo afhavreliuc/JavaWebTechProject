@@ -321,19 +321,19 @@ export default function DoctorsPage() {
                   <h3 className="text-xl font-bold text-gray-900">{doctor.name || `Dr. #${doctor.id}`}</h3>
                   <p className="text-indigo-600 font-medium">{doctor.medicalService?.name || 'Fără serviciu'}</p>
                 </div>
-                {user.role === 'DOCTOR' && user.doctorId === doctor.id && (
+                {user.role === 'DOCTOR' && (
                 <div className="flex gap-2">
                   <button 
                     onClick={() => handleEdit(doctor)}
                     className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-                      title="Editează datele tale"
+                      title={user.doctorId === doctor.id ? "Editează datele tale" : "Editează doctor"}
                   >
                     <Edit2 size={18} />
                   </button>
                   <button 
                     onClick={() => handleDelete(doctor.id)}
                     className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      title="Șterge contul tău de doctor"
+                      title={user.doctorId === doctor.id ? "Șterge contul tău de doctor" : "Șterge doctor"}
                   >
                     <Trash2 size={18} />
                   </button>

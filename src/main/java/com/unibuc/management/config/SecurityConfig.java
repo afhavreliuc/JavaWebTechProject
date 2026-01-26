@@ -38,19 +38,16 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/auth/**",
-                                "/api/patients/test").permitAll()
+                                "/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
-                            System.err.println("Authentication failed: " + authException.getMessage());
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\":\"Unauthorized\"}");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            System.err.println("Access denied: " + accessDeniedException.getMessage());
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\":\"Forbidden\"}");
@@ -58,7 +55,7 @@ public class SecurityConfig {
                 )
 
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
                         .sessionFixation().migrateSession()
                 );
 

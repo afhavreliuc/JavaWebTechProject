@@ -1,24 +1,53 @@
 import React, { useState } from 'react';
-import { UserPlus, Lock, User as UserIcon, ShieldCheck } from 'lucide-react';
+import { UserPlus, Lock, User as UserIcon, ShieldCheck, Calendar, Users } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [age, setAge] = useState('');
+  const [sex, setSex] = useState(true);
   const [role, setRole] = useState('PATIENT');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    // Validate age for patients
+    if (role === 'PATIENT' && age) {
+      const patientAge = calculateAge(age);
+      if (patientAge === null || patientAge < 18) {
+        setError('Pacienții trebuie să aibă minim 18 ani pentru a se înregistra.');
+        setLoading(false);
+        return;
+      }
+    }
+    
     try {
       await axios.post('http://localhost:8080/auth/register', { 
         username, 
         password,
+        fullName,
+        age: age || null,
+        sex,
         role 
       });
       navigate('/login', { state: { message: 'Cont creat cu succes! Te poți autentifica acum.' } });
@@ -61,7 +90,7 @@ export default function RegisterPage() {
                 type="text"
                 required
                 className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Nume utilizator"
+                placeholder="Nume utilizator (Login)"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -79,6 +108,50 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <UserIcon size={18} />
+              </div>
+              <input
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Nume Complet"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <Calendar size={18} />
+              </div>
+              <input
+                type="date"
+                required
+                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Data Nașterii"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                max={role === 'PATIENT' ? new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0] : undefined}
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <Users size={18} />
+              </div>
+              <select
+                className="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white"
+                value={sex}
+                onChange={(e) => setSex(e.target.value === 'true')}
+              >
+                <option value="true">Masculin</option>
+                <option value="false">Feminin</option>
+              </select>
+            </div>
+
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                 <ShieldCheck size={18} />

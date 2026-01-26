@@ -1,9 +1,12 @@
 package com.unibuc.management.services;
 
 import com.unibuc.management.entities.Patient;
+import com.unibuc.management.entities.User;
 import com.unibuc.management.repositories.PatientRepository;
+import com.unibuc.management.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,10 +14,12 @@ import java.util.Optional;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository, UserRepository userRepository) {
         this.patientRepository = patientRepository;
+        this.userRepository = userRepository;
     }
 
     public List<Patient> getAllPatients() {
@@ -41,9 +46,21 @@ public class PatientService {
         return Optional.empty();
     }
 
+    @Transactional
     public boolean deletePatient(Integer id) {
-        if (patientRepository.existsById(id)) {
+        Optional<Patient> patientOpt = patientRepository.findById(id);
+        if (patientOpt.isPresent()) {
+            Patient patient = patientOpt.get();
+            User user = patient.getUser();
+            
+            // Delete the patient first
             patientRepository.deleteById(id);
+            
+            // Delete the associated user account if it exists
+            if (user != null) {
+                userRepository.delete(user);
+            }
+            
             return true;
         }
         return false;
