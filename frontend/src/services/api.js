@@ -42,6 +42,8 @@ export const appointmentService = {
 export const propagationService = {
   sync: () => api.post('/propagation/sync'),
   getStats: () => api.get('/propagation/stats'),
+  getFinancialEvolution: () => api.get('/propagation/report/financial-evolution'),
+  getTopDoctors: () => api.get('/propagation/report/top-doctors'),
 };
 
 export const medicalServiceService = {

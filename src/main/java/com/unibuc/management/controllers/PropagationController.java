@@ -28,5 +28,15 @@ public class PropagationController {
     public ResponseEntity<Map<String, Object>> getStats() {
         return ResponseEntity.ok(propagationService.getSyncStats());
     }
+
+    @GetMapping("/report/financial-evolution")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getFinancialEvolution() {
+        return ResponseEntity.ok(propagationService.getFinancialEvolution());
+    }
+
+    @GetMapping("/report/top-doctors")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getTopDoctors() {
+        return ResponseEntity.ok(propagationService.getTopDoctors());
+    }
 }
 

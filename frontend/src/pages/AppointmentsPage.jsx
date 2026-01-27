@@ -342,7 +342,14 @@ export default function AppointmentsPage() {
                         <Clock size={24} />
                       </div>
                       <div>
+                        <div className="flex items-center gap-2">
                         <p className="font-bold text-gray-800">{appt.medicalService?.name}</p>
+                          {appt.medicalService?.price && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                              {appt.medicalService.price} RON
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500">{formatDateTime(appt.appointmentFrom)}</p>
                         {user.role === 'DOCTOR' && <p className="text-xs text-indigo-600 font-medium">Pacient: {appt.patient?.name}</p>}
                       </div>

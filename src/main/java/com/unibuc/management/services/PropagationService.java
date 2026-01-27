@@ -2,6 +2,7 @@ package com.unibuc.management.services;
 
 import com.unibuc.management.entities.Appointment;
 import com.unibuc.management.entities.Doctor;
+import com.unibuc.management.entities.MedicalService;
 import com.unibuc.management.entities.Patient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +27,6 @@ public class PropagationService {
     public void propagateData() {
         try {
             System.out.println("Starting ETL process...");
-            // Verify DW connection
             try {
                 String dwUrl = dwJdbcTemplate.getDataSource().getConnection().getMetaData().getURL();
                 System.out.println("DW DataSource URL: " + dwUrl);
@@ -34,17 +34,13 @@ public class PropagationService {
                 System.err.println("Error checking DW DataSource: " + e.getMessage());
             }
             
-            // 1. Create tables in DW if they don't exist (H2 compatible syntax)
             try {
                 dwJdbcTemplate.execute("CREATE TABLE IF NOT EXISTS PatientDW (id INT PRIMARY KEY, name VARCHAR(100), medical_record VARCHAR(4000), age DATE)");
             } catch (Exception e) {
-                // Table might already exist, try to drop and recreate
                 try {
                     dwJdbcTemplate.execute("DROP TABLE PatientDW");
                     dwJdbcTemplate.execute("CREATE TABLE PatientDW (id INT PRIMARY KEY, name VARCHAR(100), medical_record VARCHAR(4000), age DATE)");
-                } catch (Exception ex) {
-                    // Ignore if drop fails
-                }
+                } catch (Exception ex) {}
             }
             
             try {
@@ -53,40 +49,26 @@ public class PropagationService {
                 try {
                     dwJdbcTemplate.execute("DROP TABLE DoctorDW");
                     dwJdbcTemplate.execute("CREATE TABLE DoctorDW (id INT PRIMARY KEY, office VARCHAR(50), number_of_ptodays INT)");
-                } catch (Exception ex) {
-                    // Ignore if drop fails
-                }
+                } catch (Exception ex) {}
             }
             
             try {
-                dwJdbcTemplate.execute("CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP)");
+                dwJdbcTemplate.execute("DROP TABLE IF EXISTS AppointmentDW");
+                dwJdbcTemplate.execute("CREATE TABLE AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100))");
             } catch (Exception e) {
-                try {
-                    dwJdbcTemplate.execute("DROP TABLE AppointmentDW");
-                    dwJdbcTemplate.execute("CREATE TABLE AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP)");
-                } catch (Exception ex) {
-                    // Ignore if drop fails
-                }
+                System.err.println("Error recreating AppointmentDW: " + e.getMessage());
             }
 
-            // 2. Clear DW tables for a fresh sync
             try {
                 dwJdbcTemplate.execute("DELETE FROM PatientDW");
-            } catch (Exception e) {
-                // Table might not exist yet, ignore
-            }
+            } catch (Exception e) {}
             try {
                 dwJdbcTemplate.execute("DELETE FROM DoctorDW");
-            } catch (Exception e) {
-                // Table might not exist yet, ignore
-            }
+            } catch (Exception e) {}
             try {
                 dwJdbcTemplate.execute("DELETE FROM AppointmentDW");
-            } catch (Exception e) {
-                // Table might not exist yet, ignore
-            }
+            } catch (Exception e) {}
 
-            // 3. Copy Patients
             System.out.println("Copying patients...");
             List<Map<String, Object>> patients = oltpJdbcTemplate.queryForList("SELECT id, name, medical_record, age FROM patient");
             for (Map<String, Object> patient : patients) {
@@ -95,7 +77,6 @@ public class PropagationService {
             }
             System.out.println("Copied " + patients.size() + " patients");
 
-            // 4. Copy Doctors
             System.out.println("Copying doctors...");
             List<Map<String, Object>> doctors = oltpJdbcTemplate.queryForList("SELECT id, office, number_ofptodays FROM doctor");
             for (Map<String, Object> doctor : doctors) {
@@ -104,14 +85,23 @@ public class PropagationService {
             }
             System.out.println("Copied " + doctors.size() + " doctors");
 
-            // 5. Copy Appointments
-            System.out.println("Copying appointments...");
-            List<Map<String, Object>> appts = oltpJdbcTemplate.queryForList("SELECT id, status, appointment_from FROM appointment");
+            System.out.println("Copying appointments with financial data...");
+            String query = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, d.id as doctor_id, d.name as doctor_name " +
+                           "FROM appointment a " +
+                           "LEFT JOIN payment p ON a.id = p.appointment_id " +
+                           "LEFT JOIN doctor d ON a.id_medical_service = d.id_medical_service";
+            
+            List<Map<String, Object>> appts = oltpJdbcTemplate.queryForList(query);
             for (Map<String, Object> appt : appts) {
-                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from) VALUES (?, ?, ?)",
-                        appt.get("ID"), appt.get("STATUS"), appt.get("APPOINTMENT_FROM"));
+                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
+                        appt.get("ID"), 
+                        appt.get("STATUS"), 
+                        appt.get("APPOINTMENT_FROM"),
+                        appt.get("REVENUE"),
+                        appt.get("DOCTOR_ID"),
+                        appt.get("DOCTOR_NAME"));
             }
-            System.out.println("Copied " + appts.size() + " appointments");
+            System.out.println("Copied " + appts.size() + " appointments to DW");
             System.out.println("ETL process completed successfully!");
         } catch (Exception e) {
             System.err.println("ETL Error during sync: " + e.getMessage());
@@ -177,7 +167,6 @@ public class PropagationService {
             System.err.println("[Stats] Error counting DW appointments: " + e.getMessage());
         }
         
-        // Check if any DW tables don't exist
         boolean tablesMissing = false;
         try {
             dwJdbcTemplate.queryForObject("SELECT COUNT(*) FROM PatientDW", Integer.class);
@@ -191,15 +180,12 @@ public class PropagationService {
         
         return stats;
     }
-
-    // Metode pentru propagare automată (folosite de Entity Listeners)
     
     public void propagatePatientToDW(Patient patient) {
         try {
             ensureTableExists("PatientDW", 
                 "CREATE TABLE IF NOT EXISTS PatientDW (id INT PRIMARY KEY, name VARCHAR(100), medical_record VARCHAR(4000), age DATE)");
             
-            // H2 doesn't support MERGE, so we use DELETE + INSERT
             dwJdbcTemplate.update("DELETE FROM PatientDW WHERE id = ?", patient.getId());
             int rowsAffected = dwJdbcTemplate.update("INSERT INTO PatientDW (id, name, medical_record, age) VALUES (?, ?, ?, ?)",
                 patient.getId(), patient.getName(), patient.getMedicalRecord(), patient.getAge());
@@ -207,7 +193,6 @@ public class PropagationService {
         } catch (Exception e) {
             System.err.println("[DW] Error propagating patient to DW: " + e.getMessage());
             e.printStackTrace();
-            // Don't throw - don't interrupt OLTP operation
         }
     }
 
@@ -229,15 +214,30 @@ public class PropagationService {
     public void propagateAppointmentToDW(Appointment appointment) {
         try {
             ensureTableExists("AppointmentDW",
-                "CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP)");
+                "CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100))");
             
+            String sql = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, d.id as doctor_id, d.name as doctor_name " +
+                         "FROM appointment a " +
+                         "LEFT JOIN payment p ON a.id = p.appointment_id " +
+                         "LEFT JOIN doctor d ON a.id_medical_service = d.id_medical_service " +
+                         "WHERE a.id = ?";
+            
+            List<Map<String, Object>> results = oltpJdbcTemplate.queryForList(sql, appointment.getId());
+            
+            if (!results.isEmpty()) {
+                Map<String, Object> data = results.get(0);
             dwJdbcTemplate.update("DELETE FROM AppointmentDW WHERE id = ?", appointment.getId());
-            int rowsAffected = dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from) VALUES (?, ?, ?)",
-                appointment.getId(), appointment.getStatus(), appointment.getAppointmentFrom());
-            System.out.println("[DW] Appointment " + appointment.getId() + " propagated successfully (rows: " + rowsAffected + ")");
+                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
+                    data.get("ID"), 
+                    data.get("STATUS"), 
+                    data.get("APPOINTMENT_FROM"),
+                    data.get("REVENUE"),
+                    data.get("DOCTOR_ID"),
+                    data.get("DOCTOR_NAME"));
+                System.out.println("[DW] Appointment " + appointment.getId() + " propagated successfully");
+            }
         } catch (Exception e) {
             System.err.println("[DW] Error propagating appointment to DW: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -267,12 +267,9 @@ public class PropagationService {
 
     private void ensureTableExists(String tableName, String createTableSQL) {
         try {
-            // Try to query the table first to see if it exists
             try {
                 dwJdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + tableName, Integer.class);
-                // Table exists, no need to create
             } catch (Exception e) {
-                // Table doesn't exist, create it
                 System.out.println("[DW] Creating table " + tableName);
                 dwJdbcTemplate.execute(createTableSQL);
                 System.out.println("[DW] Table " + tableName + " created successfully");
@@ -281,6 +278,29 @@ public class PropagationService {
             System.err.println("[DW] Error ensuring table " + tableName + " exists: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public List<Map<String, Object>> getFinancialEvolution() {
+        String sql = "SELECT MONTH(appointment_from) as month_num, " +
+                     "SUM(CASE WHEN YEAR(appointment_from) = YEAR(CURRENT_DATE()) THEN revenue ELSE 0 END) as current_year, " +
+                     "SUM(CASE WHEN YEAR(appointment_from) = YEAR(CURRENT_DATE()) - 1 THEN revenue ELSE 0 END) as previous_year " +
+                     "FROM AppointmentDW " +
+                     "WHERE YEAR(appointment_from) >= YEAR(CURRENT_DATE()) - 1 " +
+                     "GROUP BY MONTH(appointment_from) " +
+                     "ORDER BY month_num";
+        return dwJdbcTemplate.queryForList(sql);
+    }
+
+    public List<Map<String, Object>> getTopDoctors() {
+        String sql = "SELECT doctor_id, doctor_name, SUM(revenue) as total_revenue, COUNT(*) as appointment_count " +
+                     "FROM AppointmentDW " +
+                     "WHERE QUARTER(appointment_from) = QUARTER(CURRENT_DATE()) " +
+                     "AND YEAR(appointment_from) = YEAR(CURRENT_DATE()) " +
+                     "AND doctor_id IS NOT NULL " +
+                     "GROUP BY doctor_id, doctor_name " +
+                     "ORDER BY total_revenue DESC " +
+                     "FETCH FIRST 5 ROWS ONLY";
+        return dwJdbcTemplate.queryForList(sql);
     }
 }
 
