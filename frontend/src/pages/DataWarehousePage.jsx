@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { propagationService } from '../services/api';
-import { Database, RefreshCw, CheckCircle, AlertTriangle, BarChart3, TrendingUp, Users } from 'lucide-react';
+import { Database, RefreshCw, CheckCircle, AlertTriangle, BarChart3, TrendingUp, Users, PieChart } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, Cell
+  BarChart, Bar, Cell, ComposedChart, Area
 } from 'recharts';
 
 export default function DataWarehousePage() {
   const [stats, setStats] = useState(null);
   const [financialData, setFinancialData] = useState([]);
   const [topDoctorsData, setTopDoctorsData] = useState([]);
+  const [paretoData, setParetoData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState(null);
@@ -17,14 +18,16 @@ export default function DataWarehousePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, financialRes, doctorsRes] = await Promise.all([
+      const [statsRes, financialRes, doctorsRes, paretoRes] = await Promise.all([
         propagationService.getStats(),
         propagationService.getFinancialEvolution(),
-        propagationService.getTopDoctors()
+        propagationService.getTopDoctors(),
+        propagationService.getParetoAnalysis()
       ]);
       setStats(statsRes.data);
       setFinancialData(financialRes.data);
       setTopDoctorsData(doctorsRes.data);
+      setParetoData(paretoRes.data);
     } catch (error) {
       console.error('Error fetching DW data:', error);
     } finally {
@@ -69,6 +72,24 @@ export default function DataWarehousePage() {
     revenue: item.TOTAL_REVENUE || item.total_revenue || 0,
     count: item.APPOINTMENT_COUNT || item.appointment_count || 0
   }));
+
+  const formattedParetoData = paretoData.map((item, index) => {
+    const venitMedic = item.VENIT_MEDIC || item.Venit_Medic || 0;
+    const venitTotalClinica = item.VENIT_TOTAL_CLINICA || item.Venit_Total_Clinica || paretoData[0]?.VENIT_TOTAL_CLINICA || paretoData[0]?.Venit_Total_Clinica || 1;
+    const procentDinTotal = item.PROCENT_DIN_TOTAL || item.Procent_Din_Total || 0;
+    const venitCumulat = item.VENIT_CUMULAT || item.Venit_Cumulat || 0;
+    const procentCumulat = venitTotalClinica > 0 ? (venitCumulat / venitTotalClinica) * 100 : 0;
+    
+    return {
+      name: item.DOCTOR_NAME || item.doctor_name || 'Necunoscut',
+      venitMedic: venitMedic,
+      procentDinTotal: procentDinTotal,
+      venitCumulat: venitCumulat,
+      procentCumulat: Math.round(procentCumulat * 100) / 100,
+      index: index + 1,
+      isTop80: procentCumulat <= 80
+    };
+  });
 
   const isDataValid = (table) => {
     if (!stats) return false;
@@ -212,6 +233,167 @@ export default function DataWarehousePage() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <PieChart className="text-indigo-600" size={24} />
+          <h3 className="text-xl font-bold text-gray-800">Raport 3: Analiza Pareto a Veniturilor (Regula 80/20)</h3>
+        </div>
+        <p className="text-sm text-gray-600 mb-6 italic">
+          Obiectiv: Vedem contribuția cumulată a medicilor la venitul total.
+        </p>
+        
+        {formattedParetoData.length > 0 ? (
+          <>
+            <div className="h-[400px] w-full mb-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={formattedParetoData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#9ca3af', fontSize: 11}}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    label={{ value: 'Venit (RON)', angle: -90, position: 'insideLeft' }}
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#9ca3af', fontSize: 12}}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    label={{ value: 'Procent Cumulat (%)', angle: 90, position: 'insideRight' }}
+                    domain={[0, 100]}
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#9ca3af', fontSize: 12}}
+                  />
+                  <Tooltip 
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}}
+                    formatter={(value, name) => {
+                      if (name === 'venitMedic') return [`${value.toLocaleString('ro-RO')} RON`, 'Venit Medic'];
+                      if (name === 'procentCumulat') return [`${value.toFixed(2)}%`, 'Procent Cumulat'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    yAxisId="left"
+                    dataKey="venitMedic" 
+                    name="Venit Medic" 
+                    fill="#4f46e5" 
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {formattedParetoData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.isTop80 ? '#4f46e5' : '#94a3b8'} />
+                    ))}
+                  </Bar>
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="procentCumulat"
+                    name="Procent Cumulat"
+                    stroke="#ef4444"
+                    fill="#fee2e2"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey={() => 80}
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    name="Prag 80%"
+                    dot={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b-2 border-gray-200">
+                    <th className="text-left p-3 text-sm font-bold text-gray-700">#</th>
+                    <th className="text-left p-3 text-sm font-bold text-gray-700">Nume Medic</th>
+                    <th className="text-right p-3 text-sm font-bold text-gray-700">Venit Medic (RON)</th>
+                    <th className="text-right p-3 text-sm font-bold text-gray-700">% din Total</th>
+                    <th className="text-right p-3 text-sm font-bold text-gray-700">Venit Cumulat (RON)</th>
+                    <th className="text-right p-3 text-sm font-bold text-gray-700">% Cumulat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formattedParetoData.map((item, index) => (
+                    <tr 
+                      key={index} 
+                      className={`border-b border-gray-100 hover:bg-gray-50 ${
+                        item.procentCumulat <= 80 ? 'bg-green-50' : ''
+                      }`}
+                    >
+                      <td className="p-3 text-sm text-gray-600">{item.index}</td>
+                      <td className="p-3 text-sm font-semibold text-gray-800">{item.name}</td>
+                      <td className="p-3 text-sm text-right text-gray-700">
+                        {item.venitMedic.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON
+                      </td>
+                      <td className="p-3 text-sm text-right text-gray-700">
+                        {item.procentDinTotal.toFixed(2)}%
+                      </td>
+                      <td className="p-3 text-sm text-right text-gray-700 font-semibold">
+                        {item.venitCumulat.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON
+                      </td>
+                      <td className={`p-3 text-sm text-right font-bold ${
+                        item.procentCumulat <= 80 ? 'text-green-600' : 'text-gray-700'
+                      }`}>
+                        {item.procentCumulat.toFixed(2)}%
+                        {item.procentCumulat <= 80 && index === formattedParetoData.findIndex(d => d.procentCumulat > 80) - 1 && (
+                          <span className="ml-2 text-xs text-green-600">✓ Top 80%</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {formattedParetoData.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-indigo-50 border-t-2 border-indigo-200">
+                      <td colSpan="2" className="p-3 text-sm font-bold text-gray-800">TOTAL CLINICĂ</td>
+                      <td className="p-3 text-sm text-right font-bold text-indigo-700">
+                        {formattedParetoData[0]?.venitCumulat ? 
+                          formattedParetoData[formattedParetoData.length - 1].venitCumulat.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' RON'
+                          : '-'
+                        }
+                      </td>
+                      <td className="p-3 text-sm text-right font-bold text-indigo-700">100.00%</td>
+                      <td className="p-3 text-sm text-right font-bold text-indigo-700">
+                        {formattedParetoData[0]?.venitCumulat ? 
+                          formattedParetoData[formattedParetoData.length - 1].venitCumulat.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' RON'
+                          : '-'
+                        }
+                      </td>
+                      <td className="p-3 text-sm text-right font-bold text-indigo-700">100.00%</td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+            <p className="mt-4 text-xs text-gray-500 italic">
+              * Medici marcați cu verde contribuie la primii 80% din venitul total (Regula Pareto 80/20).
+            </p>
+          </>
+        ) : (
+          <div className="text-center py-12 text-gray-500">
+            <AlertTriangle className="mx-auto mb-4" size={48} />
+            <p>Nu există date disponibile pentru analiza Pareto.</p>
+            <p className="text-sm mt-2">Asigură-te că ai sincronizat datele OLTP {'->'} DW.</p>
+          </div>
+        )}
       </div>
     </div>
   );

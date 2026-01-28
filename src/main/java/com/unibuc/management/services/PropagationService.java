@@ -86,22 +86,41 @@ public class PropagationService {
             System.out.println("Copied " + doctors.size() + " doctors");
 
             System.out.println("Copying appointments with financial data...");
-            String query = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, d.id as doctor_id, d.name as doctor_name " +
+            // Selectăm un singur doctor per appointment (primul disponibil pentru acel medical service)
+            String query = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, " +
+                           "(SELECT d.id FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_id, " +
+                           "(SELECT d.name FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_name " +
                            "FROM appointment a " +
-                           "LEFT JOIN payment p ON a.id = p.appointment_id " +
-                           "LEFT JOIN doctor d ON a.id_medical_service = d.id_medical_service";
+                           "LEFT JOIN payment p ON a.id = p.appointment_id";
             
             List<Map<String, Object>> appts = oltpJdbcTemplate.queryForList(query);
+            System.out.println("Found " + appts.size() + " appointments in OLTP");
+            int successCount = 0;
+            int errorCount = 0;
             for (Map<String, Object> appt : appts) {
-                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
-                        appt.get("ID"), 
-                        appt.get("STATUS"), 
-                        appt.get("APPOINTMENT_FROM"),
-                        appt.get("REVENUE"),
-                        appt.get("DOCTOR_ID"),
-                        appt.get("DOCTOR_NAME"));
+                try {
+                    Object doctorId = appt.get("DOCTOR_ID");
+                    Object doctorName = appt.get("DOCTOR_NAME");
+                    
+                    if (doctorId == null) {
+                        System.out.println("[DW] Warning: Appointment " + appt.get("ID") + " has no associated doctor");
+                    }
+                    
+                    dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
+                            appt.get("ID"), 
+                            appt.get("STATUS"), 
+                            appt.get("APPOINTMENT_FROM"),
+                            appt.get("REVENUE"),
+                            doctorId,
+                            doctorName);
+                    successCount++;
+                } catch (Exception e) {
+                    errorCount++;
+                    System.err.println("[DW] Error inserting appointment " + appt.get("ID") + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
-            System.out.println("Copied " + appts.size() + " appointments to DW");
+            System.out.println("Copied " + successCount + " out of " + appts.size() + " appointments to DW (errors: " + errorCount + ")");
             System.out.println("ETL process completed successfully!");
         } catch (Exception e) {
             System.err.println("ETL Error during sync: " + e.getMessage());
@@ -216,17 +235,19 @@ public class PropagationService {
             ensureTableExists("AppointmentDW",
                 "CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100))");
             
-            String sql = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, d.id as doctor_id, d.name as doctor_name " +
+            // Selectăm un singur doctor per appointment (primul disponibil pentru acel medical service)
+            String sql = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, " +
+                         "(SELECT d.id FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_id, " +
+                         "(SELECT d.name FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_name " +
                          "FROM appointment a " +
                          "LEFT JOIN payment p ON a.id = p.appointment_id " +
-                         "LEFT JOIN doctor d ON a.id_medical_service = d.id_medical_service " +
                          "WHERE a.id = ?";
             
             List<Map<String, Object>> results = oltpJdbcTemplate.queryForList(sql, appointment.getId());
             
             if (!results.isEmpty()) {
                 Map<String, Object> data = results.get(0);
-            dwJdbcTemplate.update("DELETE FROM AppointmentDW WHERE id = ?", appointment.getId());
+                dwJdbcTemplate.update("DELETE FROM AppointmentDW WHERE id = ?", appointment.getId());
                 dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
                     data.get("ID"), 
                     data.get("STATUS"), 
@@ -238,6 +259,7 @@ public class PropagationService {
             }
         } catch (Exception e) {
             System.err.println("[DW] Error propagating appointment to DW: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -300,6 +322,22 @@ public class PropagationService {
                      "GROUP BY doctor_id, doctor_name " +
                      "ORDER BY total_revenue DESC " +
                      "FETCH FIRST 5 ROWS ONLY";
+        return dwJdbcTemplate.queryForList(sql);
+    }
+
+    // RAPORT 3: Analiza Pareto (Contribuția Medicilor la Venit)
+    // Descriere: Calculăm venitul cumulat și procentul din total folosind Window Functions.
+    public List<Map<String, Object>> getParetoAnalysis() {
+        String sql = "SELECT " +
+                     "doctor_name, " +
+                     "SUM(revenue) AS Venit_Medic, " +
+                     "SUM(SUM(revenue)) OVER () AS Venit_Total_Clinica, " +
+                     "ROUND((SUM(revenue) * 100.0 / SUM(SUM(revenue)) OVER ()), 2) AS Procent_Din_Total, " +
+                     "SUM(SUM(revenue)) OVER (ORDER BY SUM(revenue) DESC ROWS UNBOUNDED PRECEDING) AS Venit_Cumulat " +
+                     "FROM AppointmentDW " +
+                     "WHERE doctor_id IS NOT NULL AND doctor_name IS NOT NULL " +
+                     "GROUP BY doctor_name " +
+                     "ORDER BY Venit_Medic DESC";
         return dwJdbcTemplate.queryForList(sql);
     }
 }

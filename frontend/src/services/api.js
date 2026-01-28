@@ -44,6 +44,7 @@ export const propagationService = {
   getStats: () => api.get('/propagation/stats'),
   getFinancialEvolution: () => api.get('/propagation/report/financial-evolution'),
   getTopDoctors: () => api.get('/propagation/report/top-doctors'),
+  getParetoAnalysis: () => api.get('/propagation/report/pareto-analysis'),
 };
 
 export const medicalServiceService = {

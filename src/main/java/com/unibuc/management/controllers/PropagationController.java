@@ -20,7 +20,13 @@ public class PropagationController {
             propagationService.propagateData();
             return ResponseEntity.ok("Sincronizare OLTP -> DW realizată cu succes!");
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Eroare la sincronizare: " + e.getMessage());
+            System.err.println("[Controller] Error during sync: " + e.getMessage());
+            e.printStackTrace();
+            String errorMessage = e.getMessage();
+            if (e.getCause() != null) {
+                errorMessage += " - Cauză: " + e.getCause().getMessage();
+            }
+            return ResponseEntity.internalServerError().body("Eroare la sincronizare: " + errorMessage);
         }
     }
 
@@ -37,6 +43,11 @@ public class PropagationController {
     @GetMapping("/report/top-doctors")
     public ResponseEntity<java.util.List<Map<String, Object>>> getTopDoctors() {
         return ResponseEntity.ok(propagationService.getTopDoctors());
+    }
+
+    @GetMapping("/report/pareto-analysis")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getParetoAnalysis() {
+        return ResponseEntity.ok(propagationService.getParetoAnalysis());
     }
 }
 
