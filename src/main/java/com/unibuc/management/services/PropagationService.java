@@ -54,7 +54,7 @@ public class PropagationService {
             
             try {
                 dwJdbcTemplate.execute("DROP TABLE IF EXISTS AppointmentDW");
-                dwJdbcTemplate.execute("CREATE TABLE AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100))");
+                dwJdbcTemplate.execute("CREATE TABLE AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100), patient_id INT)");
             } catch (Exception e) {
                 System.err.println("Error recreating AppointmentDW: " + e.getMessage());
             }
@@ -87,7 +87,7 @@ public class PropagationService {
 
             System.out.println("Copying appointments with financial data...");
             // Selectăm un singur doctor per appointment (primul disponibil pentru acel medical service)
-            String query = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, " +
+            String query = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, a.id_patient as patient_id, " +
                            "(SELECT d.id FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_id, " +
                            "(SELECT d.name FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_name " +
                            "FROM appointment a " +
@@ -106,13 +106,14 @@ public class PropagationService {
                         System.out.println("[DW] Warning: Appointment " + appt.get("ID") + " has no associated doctor");
                     }
                     
-                    dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
+                    dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                             appt.get("ID"), 
                             appt.get("STATUS"), 
                             appt.get("APPOINTMENT_FROM"),
                             appt.get("REVENUE"),
                             doctorId,
-                            doctorName);
+                            doctorName,
+                            appt.get("PATIENT_ID"));
                     successCount++;
                 } catch (Exception e) {
                     errorCount++;
@@ -233,10 +234,10 @@ public class PropagationService {
     public void propagateAppointmentToDW(Appointment appointment) {
         try {
             ensureTableExists("AppointmentDW",
-                "CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100))");
+                "CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100), patient_id INT)");
             
             // Selectăm un singur doctor per appointment (primul disponibil pentru acel medical service)
-            String sql = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, " +
+            String sql = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, a.id_patient as patient_id, " +
                          "(SELECT d.id FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_id, " +
                          "(SELECT d.name FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_name " +
                          "FROM appointment a " +
@@ -248,13 +249,14 @@ public class PropagationService {
             if (!results.isEmpty()) {
                 Map<String, Object> data = results.get(0);
                 dwJdbcTemplate.update("DELETE FROM AppointmentDW WHERE id = ?", appointment.getId());
-                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name) VALUES (?, ?, ?, ?, ?, ?)",
+                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     data.get("ID"), 
                     data.get("STATUS"), 
                     data.get("APPOINTMENT_FROM"),
                     data.get("REVENUE"),
                     data.get("DOCTOR_ID"),
-                    data.get("DOCTOR_NAME"));
+                    data.get("DOCTOR_NAME"),
+                    data.get("PATIENT_ID"));
                 System.out.println("[DW] Appointment " + appointment.getId() + " propagated successfully");
             }
         } catch (Exception e) {
@@ -339,6 +341,30 @@ public class PropagationService {
                      "GROUP BY doctor_name " +
                      "ORDER BY Venit_Medic DESC";
         return dwJdbcTemplate.queryForList(sql);
+    }
+
+    // RAPORT 5: Analiza Recurenței Pacienților (Fidelizare)
+    // Descriere: Calculăm diferența de zile dintre vizita curentă și cea anterioară (LAG) per pacient.
+    public List<Map<String, Object>> getPatientRecurrence() {
+        try {
+            // Asigurăm că avem tabelele necesare în DW pentru acest join (PatientDW și AppointmentDW)
+            // În AppointmentDW avem deja doctor_name, dar pentru acest raport avem nevoie de pacient
+            // Să verificăm dacă AppointmentDW are patient_id. Din codul de mai sus, nu pare să aibă.
+            // Va trebui să actualizăm schema AppointmentDW pentru a include patient_id și patient_name.
+            
+            String sql = "SELECT " +
+                         "p.name AS Pacient, " +
+                         "a.appointment_from AS Data_Vizita_Curenta, " +
+                         "LAG(a.appointment_from, 1) OVER (PARTITION BY p.id ORDER BY a.appointment_from) AS Data_Vizita_Anterioara, " +
+                         "DATEDIFF('DAY', LAG(a.appointment_from, 1) OVER (PARTITION BY p.id ORDER BY a.appointment_from), a.appointment_from) AS Zile_Intre_Vizite " +
+                         "FROM AppointmentDW a " +
+                         "JOIN PatientDW p ON a.patient_id = p.id " +
+                         "ORDER BY p.name, a.appointment_from";
+            return dwJdbcTemplate.queryForList(sql);
+        } catch (Exception e) {
+            System.err.println("Error in getPatientRecurrence: " + e.getMessage());
+            return List.of();
+        }
     }
 }
 

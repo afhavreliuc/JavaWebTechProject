@@ -11,6 +11,7 @@ export default function DataWarehousePage() {
   const [financialData, setFinancialData] = useState([]);
   const [topDoctorsData, setTopDoctorsData] = useState([]);
   const [paretoData, setParetoData] = useState([]);
+  const [recurrenceData, setRecurrenceData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState(null);
@@ -18,16 +19,18 @@ export default function DataWarehousePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, financialRes, doctorsRes, paretoRes] = await Promise.all([
+      const [statsRes, financialRes, doctorsRes, paretoRes, recurrenceRes] = await Promise.all([
         propagationService.getStats(),
         propagationService.getFinancialEvolution(),
         propagationService.getTopDoctors(),
-        propagationService.getParetoAnalysis()
+        propagationService.getParetoAnalysis(),
+        propagationService.getPatientRecurrence()
       ]);
       setStats(statsRes.data);
       setFinancialData(financialRes.data);
       setTopDoctorsData(doctorsRes.data);
       setParetoData(paretoRes.data);
+      setRecurrenceData(recurrenceRes.data);
     } catch (error) {
       console.error('Error fetching DW data:', error);
     } finally {
@@ -90,6 +93,13 @@ export default function DataWarehousePage() {
       isTop80: procentCumulat <= 80
     };
   });
+
+  const formattedRecurrenceData = recurrenceData.map(item => ({
+    pacient: item.PACIENT || item.Pacient,
+    dataCurenta: item.DATA_VIZITA_CURENTA || item.Data_Vizita_Curenta,
+    dataAnterioara: item.DATA_VIZITA_ANTERIOARA || item.Data_Vizita_Anterioara,
+    zileIntre: item.ZILE_INTRE_VIZITE || item.Zile_Intre_Vizite
+  }));
 
   const isDataValid = (table) => {
     if (!stats) return false;
@@ -391,6 +401,53 @@ export default function DataWarehousePage() {
           <div className="text-center py-12 text-gray-500">
             <AlertTriangle className="mx-auto mb-4" size={48} />
             <p>Nu există date disponibile pentru analiza Pareto.</p>
+            <p className="text-sm mt-2">Asigură-te că ai sincronizat datele OLTP {'->'} DW.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <TrendingUp className="text-indigo-600" size={24} />
+          <h3 className="text-xl font-bold text-gray-800">Raport 5: Analiza Recurenței Pacienților (Fidelizare)</h3>
+        </div>
+        <p className="text-sm text-gray-600 mb-6 italic">
+          Obiectiv: Calculăm zilele trecute între vizite pentru pacienți folosind LAG pe dată.
+        </p>
+
+        {formattedRecurrenceData.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b-2 border-gray-200">
+                  <th className="text-left p-3 text-sm font-bold text-gray-700">Pacient</th>
+                  <th className="text-left p-3 text-sm font-bold text-gray-700">Data Vizită Curentă</th>
+                  <th className="text-left p-3 text-sm font-bold text-gray-700">Data Vizită Anterioară</th>
+                  <th className="text-right p-3 text-sm font-bold text-gray-700">Zile Între Vizite</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formattedRecurrenceData.map((item, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="p-3 text-sm font-semibold text-gray-800">{item.pacient}</td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {item.dataCurenta ? new Date(item.dataCurenta).toLocaleDateString('ro-RO') : '-'}
+                    </td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {item.dataAnterioara ? new Date(item.dataAnterioara).toLocaleDateString('ro-RO') : 'Prima vizită'}
+                    </td>
+                    <td className="p-3 text-sm text-right font-bold text-indigo-600">
+                      {item.zileIntre !== null ? `${item.zileIntre} zile` : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-500">
+            <AlertTriangle className="mx-auto mb-4" size={48} />
+            <p>Nu există date disponibile pentru analiza recurenței.</p>
             <p className="text-sm mt-2">Asigură-te că ai sincronizat datele OLTP {'->'} DW.</p>
           </div>
         )}

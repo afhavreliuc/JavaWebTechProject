@@ -49,5 +49,10 @@ public class PropagationController {
     public ResponseEntity<java.util.List<Map<String, Object>>> getParetoAnalysis() {
         return ResponseEntity.ok(propagationService.getParetoAnalysis());
     }
+
+    @GetMapping("/report/patient-recurrence")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getPatientRecurrence() {
+        return ResponseEntity.ok(propagationService.getPatientRecurrence());
+    }
 }
 
