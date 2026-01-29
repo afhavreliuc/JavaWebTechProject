@@ -182,26 +182,23 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
-          <label className="block text-sm font-bold text-indigo-900 mb-2">
-            {user.role === 'DOCTOR' ? 'Filtrează după Pacient' : 'Selectează Pacientul'} <span className="text-blue-600">*</span>
-          </label>
-          <select 
-            className="w-full border-none rounded-lg p-3 shadow-sm bg-white focus:ring-2 focus:ring-indigo-500"
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-            disabled={user.role === 'PATIENT'}
-          >
-            {user.role === 'DOCTOR' ? (
+        {user.role === 'DOCTOR' && (
+          <div className="mb-8 p-4 bg-indigo-50 rounded-xl">
+            <label className="block text-sm font-bold text-indigo-900 mb-2">
+              Filtrează după Pacient <span className="text-blue-600">*</span>
+            </label>
+            <select 
+              className="w-full border-none rounded-lg p-3 shadow-sm bg-white focus:ring-2 focus:ring-indigo-500"
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+            >
               <option value="">Toți pacienții (Programările Mele)</option>
-            ) : (
-              <option value="">Alege un pacient din listă...</option>
-            )}
-            {patients.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
-          </select>
-        </div>
+              {patients.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
+            </select>
+          </div>
+        )}
 
-        {(selectedPatientId || user.role === 'DOCTOR') && (
+        {(selectedPatientId || user.role === 'DOCTOR' || user.role === 'PATIENT') && (
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-700">

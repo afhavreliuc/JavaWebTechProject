@@ -159,7 +159,7 @@ export default function DoctorsPage() {
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-gray-800">
-          {isDoctor ? 'Profilul Meu' : 'Gestionare Doctori'}
+          {isDoctor ? 'Profilul Meu' : 'Doctori'}
         </h2>
         <div className="flex gap-2">
           {isDoctor && (

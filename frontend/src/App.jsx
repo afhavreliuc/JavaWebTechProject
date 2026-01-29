@@ -72,10 +72,12 @@ function AppContent() {
               <div className="flex items-center gap-4">
                 {user && (
                   <>
-                    <Link to="/dw" className="flex items-center gap-2 py-2 px-4 rounded-lg bg-indigo-800 hover:bg-indigo-900 transition-colors shadow-inner text-sm">
-                      <Database size={16} />
-                      <span className="hidden sm:inline">DW</span>
-                    </Link>
+                    {user.role === 'DOCTOR' && (
+                      <Link to="/dw" className="flex items-center gap-2 py-2 px-4 rounded-lg bg-indigo-800 hover:bg-indigo-900 transition-colors shadow-inner text-sm">
+                        <Database size={16} />
+                        <span className="hidden sm:inline">DW</span>
+                      </Link>
+                    )}
                     <div className="flex items-center gap-3 ml-2 pl-4 border-l border-indigo-500">
                       <span className="text-sm font-medium hidden sm:inline">{user.username} ({user.role})</span>
                       <button 

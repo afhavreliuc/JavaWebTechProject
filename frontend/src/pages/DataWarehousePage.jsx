@@ -128,26 +128,28 @@ export default function DataWarehousePage() {
             <Database className="text-indigo-600" size={32} />
             Data Warehouse (DW)
           </h2>
-          <button 
-            onClick={handleSync}
-            disabled={syncing}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-white transition-all shadow-md ${
-              syncing ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95'
-            }`}
-          >
-            <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
-            {syncing ? 'Se sincronizează...' : 'Sincronizează OLTP -> DW'}
-          </button>
-          <button 
-            onClick={handleSeedMock}
-            disabled={loading || syncing}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-white transition-all shadow-md ${
-              loading || syncing ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:scale-95'
-            }`}
-          >
-            <Database size={20} />
-            Încarcă Date Mock (Word)
-          </button>
+          <div className="flex items-center gap-2 opacity-60">
+            <button 
+              onClick={handleSync}
+              disabled={syncing}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium text-white transition-all shadow-sm ${
+                syncing ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95'
+              }`}
+            >
+              <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+              {syncing ? 'Se sincronizează...' : 'Sincronizează OLTP -> DW'}
+            </button>
+            <button 
+              onClick={handleSeedMock}
+              disabled={loading || syncing}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium text-white transition-all shadow-sm ${
+                loading || syncing ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:scale-95'
+              }`}
+            >
+              <Database size={16} />
+              Încarcă Date Mock (Word)
+            </button>
+          </div>
         </div>
 
         {message && (
