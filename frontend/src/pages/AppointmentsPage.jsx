@@ -32,7 +32,6 @@ export default function AppointmentsPage() {
         }
         
         const sRes = await medicalServiceService.getAll();
-        // Filtrăm doar serviciile care au cel puțin un doctor alocat
         const servicesWithDoctors = sRes.data.filter(s => s.medicalServiceDoctors && s.medicalServiceDoctors.length > 0);
         setServices(servicesWithDoctors);
         
@@ -51,10 +50,8 @@ export default function AppointmentsPage() {
       fetchPatientAppointments(selectedPatientId);
     } else if (user.role === 'DOCTOR') {
       if (selectedPatientId) {
-        // Dacă un medic a selectat un pacient specific, vedem programările acelui pacient (filtrate de backend pentru acest medic)
         fetchPatientAppointments(selectedPatientId);
       } else if (user.doctorId) {
-        // Dacă nu e selectat niciun pacient, medicul vede toate programările sale
         fetchDoctorAppointments(user.doctorId);
       }
     } else {

@@ -56,6 +56,20 @@ export default function DataWarehousePage() {
     }
   };
 
+  const handleSeedMock = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await propagationService.seedMock();
+      setMessage({ type: 'success', text: res.data });
+      fetchData();
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Eroare la încărcarea datelor mock.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const monthNames = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun", "Iul", "Aug", "Sep", "Oct", "Noi", "Dec"];
   
   const formattedFinancialData = financialData.map(item => {
@@ -123,6 +137,16 @@ export default function DataWarehousePage() {
           >
             <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
             {syncing ? 'Se sincronizează...' : 'Sincronizează OLTP -> DW'}
+          </button>
+          <button 
+            onClick={handleSeedMock}
+            disabled={loading || syncing}
+            className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-white transition-all shadow-md ${
+              loading || syncing ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:scale-95'
+            }`}
+          >
+            <Database size={20} />
+            Încarcă Date Mock (Word)
           </button>
         </div>
 
@@ -211,7 +235,7 @@ export default function DataWarehousePage() {
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={formattedTopDoctors} layout="vertical" margin={{ left: 40, right: 40 }}>
+              <BarChart data={formattedTopDoctors} layout="vertical" margin={{ left: 20, right: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
                 <XAxis type="number" hide />
                 <YAxis 
@@ -220,7 +244,7 @@ export default function DataWarehousePage() {
                   axisLine={false} 
                   tickLine={false} 
                   tick={{fill: '#4b5563', fontSize: 12, fontWeight: 600}}
-                  width={100}
+                  width={140}
                 />
                 <Tooltip 
                   cursor={{fill: '#f8fafc'}}
@@ -248,7 +272,7 @@ export default function DataWarehousePage() {
       <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
         <div className="flex items-center gap-2 mb-6">
           <PieChart className="text-indigo-600" size={24} />
-          <h3 className="text-xl font-bold text-gray-800">Raport 3: Analiza Pareto a Veniturilor (Regula 80/20)</h3>
+          <h3 className="text-xl font-bold text-gray-800">Analiza Pareto a Veniturilor (Regula 80/20)</h3>
         </div>
         <p className="text-sm text-gray-600 mb-6 italic">
           Obiectiv: Vedem contribuția cumulată a medicilor la venitul total.
@@ -256,9 +280,9 @@ export default function DataWarehousePage() {
         
         {formattedParetoData.length > 0 ? (
           <>
-            <div className="h-[400px] w-full mb-6">
+            <div className="h-[500px] w-full mb-6">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={formattedParetoData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <ComposedChart data={formattedParetoData} margin={{ top: 40, right: 100, left: 40, bottom: 120 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="name" 
@@ -267,11 +291,19 @@ export default function DataWarehousePage() {
                     height={100}
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{fill: '#9ca3af', fontSize: 11}}
+                    tick={{fill: '#6b7280', fontSize: 11}}
+                    interval={0}
+                    dy={20}
                   />
                   <YAxis 
                     yAxisId="left"
-                    label={{ value: 'Venit (RON)', angle: -90, position: 'insideLeft' }}
+                    label={{ 
+                      value: 'Venit (RON)', 
+                      angle: -90, 
+                      position: 'insideLeft', 
+                      offset: -20,
+                      style: { textAnchor: 'middle', fill: '#6b7280', fontWeight: 600 } 
+                    }}
                     axisLine={false} 
                     tickLine={false} 
                     tick={{fill: '#9ca3af', fontSize: 12}}
@@ -279,7 +311,14 @@ export default function DataWarehousePage() {
                   <YAxis 
                     yAxisId="right"
                     orientation="right"
-                    label={{ value: 'Procent Cumulat (%)', angle: 90, position: 'insideRight' }}
+                    label={{ 
+                      value: 'Procent Cumulat (%)', 
+                      angle: 90, 
+                      position: 'insideRight', 
+                      offset: -20,
+                      dx: 60,
+                      style: { textAnchor: 'middle', fill: '#6b7280', fontWeight: 600 } 
+                    }}
                     domain={[0, 100]}
                     axisLine={false} 
                     tickLine={false} 
@@ -409,11 +448,8 @@ export default function DataWarehousePage() {
       <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
         <div className="flex items-center gap-2 mb-6">
           <TrendingUp className="text-indigo-600" size={24} />
-          <h3 className="text-xl font-bold text-gray-800">Raport 5: Analiza Recurenței Pacienților (Fidelizare)</h3>
+          <h3 className="text-xl font-bold text-gray-800">Analiza Recurenței Pacienților (Fidelizare)</h3>
         </div>
-        <p className="text-sm text-gray-600 mb-6 italic">
-          Obiectiv: Calculăm zilele trecute între vizite pentru pacienți folosind LAG pe dată.
-        </p>
 
         {formattedRecurrenceData.length > 0 ? (
           <div className="overflow-x-auto">
@@ -436,9 +472,9 @@ export default function DataWarehousePage() {
                     <td className="p-3 text-sm text-gray-700">
                       {item.dataAnterioara ? new Date(item.dataAnterioara).toLocaleDateString('ro-RO') : 'Prima vizită'}
                     </td>
-                    <td className="p-3 text-sm text-right font-bold text-indigo-600">
-                      {item.zileIntre !== null ? `${item.zileIntre} zile` : '-'}
-                    </td>
+    <td className="p-3 text-sm text-right font-bold text-indigo-600">
+      {item.zileIntre !== null && item.zileIntre !== undefined ? `${item.zileIntre} zile` : '-'}
+    </td>
                   </tr>
                 ))}
               </tbody>

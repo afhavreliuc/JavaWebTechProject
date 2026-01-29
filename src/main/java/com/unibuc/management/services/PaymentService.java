@@ -33,18 +33,13 @@ public class PaymentService {
         this.paymentRepository = paymentRepository;
     }
 
-    /**
-     * Creează un Payment pentru un pacient și serviciul medical, calculând prețul corect.
-     */
     public Payment createPaymentForPatient(Patient patient, MedicalService service, Appointment appointment) {
 
         double basePrice = service.getPrice();
 
-        // Abonament → preț = 0
         if (Boolean.TRUE.equals(patient.getSubscription())) {
             basePrice = 0.0;
         }
-        // Asigurare → aplicăm ServiceCoverage
         else if (patient.getInsuranceProvider() != null) {
             Optional<ServiceCoverage> coverageOpt =
                     serviceCoverageRepository.findByMedicalServiceIdAndInsuranceProviderId(
@@ -60,9 +55,9 @@ public class PaymentService {
 
         Payment payment = new Payment();
         payment.setAmount(BigDecimal.valueOf(basePrice));
-        payment.setPaymentMethod("Cash"); // sau altceva, poate primi ca parametru
+        payment.setPaymentMethod("Cash");
         payment.setPaymentDate(LocalDateTime.now());
-        payment.setAppointment(appointment); // legăm payment de appointment
+        payment.setAppointment(appointment);
 
         return payment;
     }

@@ -70,7 +70,6 @@ export default function PatientsPage() {
   }, [user]);
 
   const handleEdit = (patient) => {
-    // For patients, they can only edit their own profile
     if (isPatient && patient.id !== user?.patientId) {
       setMessage({ type: 'error', text: 'Nu puteți edita profilul altui pacient.' });
       return;
@@ -116,7 +115,6 @@ export default function PatientsPage() {
       setEditId(null);
       setFormData({ name: '', age: '', medicalRecord: '', insuranceProviderId: '', subscription: false, sex: true });
       await fetchPatients();
-      // Refresh currentPatient for patient users
       if (isPatient && user?.patientId) {
         const response = await patientService.getById(user.patientId);
         setCurrentPatient(response.data);

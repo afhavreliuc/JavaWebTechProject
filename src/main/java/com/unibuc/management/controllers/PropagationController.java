@@ -30,6 +30,16 @@ public class PropagationController {
         }
     }
 
+    @PostMapping("/seed-mock")
+    public ResponseEntity<String> seedMockData() {
+        try {
+            propagationService.seedMockData();
+            return ResponseEntity.ok("Datele mock din documentul Word au fost încărcate în DW!");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Eroare la încărcarea datelor mock: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
         return ResponseEntity.ok(propagationService.getSyncStats());

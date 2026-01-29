@@ -27,7 +27,6 @@ public class JpaConfig {
                 EventListenerRegistry registry = sessionFactory.getServiceRegistry()
                         .getService(EventListenerRegistry.class);
                 
-                // Register the listener for post-insert, post-update, and post-delete events
                 registry.appendListeners(EventType.POST_INSERT, dwPropagationListener);
                 registry.appendListeners(EventType.POST_UPDATE, dwPropagationListener);
                 registry.appendListeners(EventType.POST_DELETE, dwPropagationListener);

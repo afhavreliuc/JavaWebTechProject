@@ -86,7 +86,6 @@ public class PropagationService {
             System.out.println("Copied " + doctors.size() + " doctors");
 
             System.out.println("Copying appointments with financial data...");
-            // Selectăm un singur doctor per appointment (primul disponibil pentru acel medical service)
             String query = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, a.id_patient as patient_id, " +
                            "(SELECT d.id FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_id, " +
                            "(SELECT d.name FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_name " +
@@ -236,7 +235,6 @@ public class PropagationService {
             ensureTableExists("AppointmentDW",
                 "CREATE TABLE IF NOT EXISTS AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100), patient_id INT)");
             
-            // Selectăm un singur doctor per appointment (primul disponibil pentru acel medical service)
             String sql = "SELECT a.id, a.status, a.appointment_from, COALESCE(p.amount, 0) as revenue, a.id_patient as patient_id, " +
                          "(SELECT d.id FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_id, " +
                          "(SELECT d.name FROM doctor d WHERE d.id_medical_service = a.id_medical_service AND ROWNUM = 1) as doctor_name " +
@@ -289,6 +287,86 @@ public class PropagationService {
         }
     }
 
+    @Transactional
+    public void seedMockData() {
+        try {
+            System.out.println("Seeding mock data from Word document...");
+            
+            ensureTableExists("PatientDW", "CREATE TABLE PatientDW (id INT PRIMARY KEY, name VARCHAR(100), medical_record VARCHAR(4000), age DATE)");
+            ensureTableExists("DoctorDW", "CREATE TABLE DoctorDW (id INT PRIMARY KEY, office VARCHAR(50), number_of_ptodays INT)");
+            ensureTableExists("AppointmentDW", "CREATE TABLE AppointmentDW (id INT PRIMARY KEY, status VARCHAR(50), appointment_from TIMESTAMP, revenue DECIMAL(10,2), doctor_id INT, doctor_name VARCHAR(100), patient_id INT)");
+
+            dwJdbcTemplate.execute("DELETE FROM AppointmentDW");
+            dwJdbcTemplate.execute("DELETE FROM DoctorDW");
+            dwJdbcTemplate.execute("DELETE FROM PatientDW");
+
+            Object[][] doctors = {
+                {1, "A101", 20, "Dr. Ionescu", "Cardiologie"},
+                {2, "A102", 18, "Dr. Popa", "Consultație Generală"},
+                {3, "A103", 22, "Dr. Marin", "Pediatrie"},
+                {4, "A104", 16, "Dr. Stan", "Neurologie"},
+                {5, "B201", 20, "Dr. Radu", "Dermatologie"},
+                {6, "B202", 15, "Dr. Dumitrescu", "Ortopedie"},
+                {7, "B203", 18, "Dr. Enache", "Ginecologie"},
+                {8, "C301", 21, "Dr. Matei", "Oftalmologie"},
+                {9, "C302", 19, "Dr. Vasilescu", "ORL"},
+                {10, "C303", 17, "Dr. Petre", "Endocrinologie"}
+            };
+
+            for (Object[] doc : doctors) {
+                dwJdbcTemplate.update("INSERT INTO DoctorDW (id, office, number_of_ptodays) VALUES (?, ?, ?)",
+                        doc[0], doc[1], doc[2]);
+            }
+
+            Object[][] patients = {
+                {1, "Ionescu Ana", "Alergie la penicilină", "1990-06-15"},
+                {2, "Popescu Mihai", "Hipertensiune", "1979-03-10"},
+                {3, "Marin Elena", null, "1996-09-22"},
+                {4, "Stan George", "Diabet tip II", "1971-01-05"},
+                {5, "Radu Andreea", null, "1985-11-30"},
+                {6, "Dumitru Ion", "Afectiuni cardiace", "1963-04-18"},
+                {7, "Iliescu Maria", null, "1999-07-09"},
+                {8, "Georgescu Paul", "Migrene frecvente", "1977-02-14"},
+                {9, "Munteanu Laura", null, "1991-08-21"},
+                {10, "Badea Nicolae", "Probleme articulare", "1966-12-03"}
+            };
+
+            for (Object[] pat : patients) {
+                dwJdbcTemplate.update("INSERT INTO PatientDW (id, name, medical_record, age) VALUES (?, ?, ?, ?)",
+                        pat[0], pat[1], pat[2], java.sql.Date.valueOf((String)pat[3]));
+            }
+
+            Object[][] appointments = {
+                {1, "COMPLETED", "2024-11-10 09:00:00", 150.00, 2, "Dr. Popa", 1},
+                {101, "COMPLETED", "2024-12-10 09:00:00", 150.00, 2, "Dr. Popa", 1},
+                {2, "COMPLETED", "2024-11-15 11:30:00", 250.00, 1, "Dr. Ionescu", 2},
+                {102, "COMPLETED", "2024-12-20 11:30:00", 250.00, 1, "Dr. Ionescu", 2},
+                {3, "COMPLETED", "2024-12-03 10:00:00", 200.00, 5, "Dr. Radu", 3},
+                {103, "COMPLETED", "2025-01-05 10:00:00", 200.00, 5, "Dr. Radu", 3},
+                {4, "COMPLETED", "2024-12-18 14:00:00", 300.00, 4, "Dr. Stan", 4},
+                {104, "COMPLETED", "2025-01-20 14:00:00", 300.00, 4, "Dr. Stan", 4},
+                {10, "COMPLETED", "2024-10-05 08:30:00", 150.00, 2, "Dr. Popa", 7},
+                {110, "COMPLETED", "2024-11-15 08:30:00", 150.00, 2, "Dr. Popa", 7},
+                {11, "COMPLETED", "2024-10-18 12:00:00", 220.00, 6, "Dr. Dumitrescu", 10},
+                {111, "COMPLETED", "2024-11-25 12:00:00", 220.00, 6, "Dr. Dumitrescu", 10},
+                {201, "COMPLETED", "2023-10-10 10:00:00", 180.00, 3, "Dr. Marin", 5},
+                {202, "COMPLETED", "2023-11-12 11:00:00", 210.00, 8, "Dr. Matei", 6},
+                {203, "COMPLETED", "2023-12-15 09:00:00", 170.00, 9, "Dr. Vasilescu", 8}
+            };
+
+            for (Object[] appt : appointments) {
+                dwJdbcTemplate.update("INSERT INTO AppointmentDW (id, status, appointment_from, revenue, doctor_id, doctor_name, patient_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        appt[0], appt[1], java.sql.Timestamp.valueOf((String)appt[2]), appt[3], appt[4], appt[5], appt[6]);
+            }
+
+            System.out.println("Mock data seeded successfully!");
+        } catch (Exception e) {
+            System.err.println("Error seeding mock data: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Eroare la popularea cu date mock: " + e.getMessage());
+        }
+    }
+
     private void ensureTableExists(String tableName, String createTableSQL) {
         try {
             try {
@@ -306,10 +384,10 @@ public class PropagationService {
 
     public List<Map<String, Object>> getFinancialEvolution() {
         String sql = "SELECT MONTH(appointment_from) as month_num, " +
-                     "SUM(CASE WHEN YEAR(appointment_from) = YEAR(CURRENT_DATE()) THEN revenue ELSE 0 END) as current_year, " +
-                     "SUM(CASE WHEN YEAR(appointment_from) = YEAR(CURRENT_DATE()) - 1 THEN revenue ELSE 0 END) as previous_year " +
+                     "SUM(CASE WHEN YEAR(appointment_from) = 2024 THEN revenue ELSE 0 END) as current_year, " +
+                     "SUM(CASE WHEN YEAR(appointment_from) = 2023 THEN revenue ELSE 0 END) as previous_year " +
                      "FROM AppointmentDW " +
-                     "WHERE YEAR(appointment_from) >= YEAR(CURRENT_DATE()) - 1 " +
+                     "WHERE YEAR(appointment_from) >= 2023 " +
                      "GROUP BY MONTH(appointment_from) " +
                      "ORDER BY month_num";
         return dwJdbcTemplate.queryForList(sql);
@@ -318,17 +396,13 @@ public class PropagationService {
     public List<Map<String, Object>> getTopDoctors() {
         String sql = "SELECT doctor_id, doctor_name, SUM(revenue) as total_revenue, COUNT(*) as appointment_count " +
                      "FROM AppointmentDW " +
-                     "WHERE QUARTER(appointment_from) = QUARTER(CURRENT_DATE()) " +
-                     "AND YEAR(appointment_from) = YEAR(CURRENT_DATE()) " +
-                     "AND doctor_id IS NOT NULL " +
+                     "WHERE doctor_id IS NOT NULL " +
                      "GROUP BY doctor_id, doctor_name " +
                      "ORDER BY total_revenue DESC " +
                      "FETCH FIRST 5 ROWS ONLY";
         return dwJdbcTemplate.queryForList(sql);
     }
 
-    // RAPORT 3: Analiza Pareto (Contribuția Medicilor la Venit)
-    // Descriere: Calculăm venitul cumulat și procentul din total folosind Window Functions.
     public List<Map<String, Object>> getParetoAnalysis() {
         String sql = "SELECT " +
                      "doctor_name, " +
@@ -343,15 +417,8 @@ public class PropagationService {
         return dwJdbcTemplate.queryForList(sql);
     }
 
-    // RAPORT 5: Analiza Recurenței Pacienților (Fidelizare)
-    // Descriere: Calculăm diferența de zile dintre vizita curentă și cea anterioară (LAG) per pacient.
     public List<Map<String, Object>> getPatientRecurrence() {
         try {
-            // Asigurăm că avem tabelele necesare în DW pentru acest join (PatientDW și AppointmentDW)
-            // În AppointmentDW avem deja doctor_name, dar pentru acest raport avem nevoie de pacient
-            // Să verificăm dacă AppointmentDW are patient_id. Din codul de mai sus, nu pare să aibă.
-            // Va trebui să actualizăm schema AppointmentDW pentru a include patient_id și patient_name.
-            
             String sql = "SELECT " +
                          "p.name AS Pacient, " +
                          "a.appointment_from AS Data_Vizita_Curenta, " +

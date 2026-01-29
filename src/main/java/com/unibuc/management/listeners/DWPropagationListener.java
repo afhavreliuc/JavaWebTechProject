@@ -56,7 +56,7 @@ public class DWPropagationListener implements ApplicationContextAware,
         PropagationService propagationService = getPropagationService();
         if (propagationService == null) {
             System.err.println("[DW] PropagationService not available!");
-            return; // Service not initialized yet
+            return;
         }
         
         try {
@@ -71,7 +71,6 @@ public class DWPropagationListener implements ApplicationContextAware,
                 propagationService.propagateAppointmentToDW((Appointment) entity);
             }
         } catch (Exception e) {
-            // Log error but don't interrupt OLTP operation
             System.err.println("[DW] Error propagating to DW: " + e.getMessage());
             e.printStackTrace();
         }
@@ -96,7 +95,6 @@ public class DWPropagationListener implements ApplicationContextAware,
         }
     }
 
-    // Required by Hibernate interfaces but not used
     @Override
     public boolean requiresPostCommitHandling(EntityPersister persister) {
         return false;

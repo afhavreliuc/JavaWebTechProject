@@ -10,21 +10,17 @@ public class ServiceCoverage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Legătura către MedicalService
     @ManyToOne
     @JoinColumn(name = "service_id")
     private MedicalService medicalService;
 
-    // Legătura către InsuranceProvider
     @ManyToOne
     @JoinColumn(name = "provider_id")
     private InsuranceProvider insuranceProvider;
 
-    // Coloana EXTRA pe care o doreai
     @Column(name = "coverage_percent")
     private Integer coveragePercent;
 
-    // --- Constructori ---
     public ServiceCoverage() {}
 
     public ServiceCoverage(MedicalService service, InsuranceProvider provider, Integer percent) {
@@ -33,7 +29,6 @@ public class ServiceCoverage {
         this.coveragePercent = percent;
     }
 
-    // --- Getters & Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

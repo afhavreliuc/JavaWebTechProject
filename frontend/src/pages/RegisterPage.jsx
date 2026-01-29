@@ -19,7 +19,6 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load medical services when component mounts or when role changes to DOCTOR
     medicalServiceService.getAll()
       .then(response => {
         if (response.data && Array.isArray(response.data)) {
@@ -49,7 +48,6 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     
-    // Validate age for patients
     if (role === 'PATIENT' && age) {
       const patientAge = calculateAge(age);
       if (patientAge === null || patientAge < 18) {

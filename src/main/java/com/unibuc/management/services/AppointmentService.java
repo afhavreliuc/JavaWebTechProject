@@ -49,7 +49,6 @@ public class AppointmentService {
             Doctor doctor = doctorOptional.get();
          doctorPTOs = ptoRepository.findByDoctorAndDate(doctor.getId(), startOfDay,endOfDay);
         }
-        // Generate available 30-minute slots between start and end hours
         List<OffsetDateTime> availableSlots = new ArrayList<>();
         while (startTime.isBefore(endTime)) {
             OffsetDateTime slot = startTime.atOffset(ZoneOffset.UTC);
@@ -58,7 +57,6 @@ public class AppointmentService {
             boolean isBlockedByPTO = doctorPTOs.stream().anyMatch(pto -> slot.isAfter(pto.getPtoFrom()) && slot.isBefore(pto.getPtoTo()));
             boolean hasAppointment = existingAppointments.stream().anyMatch(appt -> appt.getAppointmentFrom().equals(slot));
 
-            // Include slot if it's valid
             if (!isPastTime && !isBlockedByPTO && !hasAppointment) {
                 availableSlots.add(slot);
             }

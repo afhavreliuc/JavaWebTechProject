@@ -90,7 +90,6 @@ export default function DoctorsPage() {
       setEditId(null);
       setFormData({ name: '', office: '', numberOfPTOdays: 21, medicalServiceId: '' });
       await fetchData();
-      // Refresh currentDoctor for doctor users
       if (isDoctor && user?.doctorId) {
         const response = await doctorService.getById(user.doctorId);
         setCurrentDoctor(response.data);

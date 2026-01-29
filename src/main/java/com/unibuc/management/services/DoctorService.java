@@ -54,10 +54,8 @@ public class DoctorService {
         Doctor doctor = doctorOpt.get();
         User user = doctor.getUser();
         
-        // Delete the doctor first
         doctorRepository.delete(doctor);
         
-        // Delete the associated user account if it exists
         if (user != null) {
             userRepository.delete(user);
         }
@@ -66,7 +64,7 @@ public class DoctorService {
     }
 
     public Optional<Doctor> getDoctorByMedicalService(Integer medicalServiceId) {
-        return doctorRepository.findByMedicalServiceId(medicalServiceId); // Assuming there's a relation
+        return doctorRepository.findByMedicalServiceId(medicalServiceId);
     }
 
     public Optional<Doctor> getDoctorByUsername(String username) {

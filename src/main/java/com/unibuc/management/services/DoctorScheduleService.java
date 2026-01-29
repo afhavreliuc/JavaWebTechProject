@@ -66,9 +66,8 @@ public class DoctorScheduleService {
             return "Doctor has appointments on the selected day. PTO cannot be scheduled.";
         }
 
-        // Create and save the new PTO entry
         PaidTimeOff pto = new PaidTimeOff();
-        pto.setDoctor(doctor);  // Use the existing doctor entity
+        pto.setDoctor(doctor);
         pto.setPtoFrom(start);
         pto.setPtoTo(end);
 

@@ -92,13 +92,11 @@ public class AuthController {
         } else if (user.getRole() == Role.DOCTOR) {
             Optional<Doctor> doctorOpt = doctorService.getDoctorByUsername(username);
             
-            // Fallback for users registered before the link was implemented
             if (doctorOpt.isEmpty()) {
                 doctorOpt = doctorService.getAllDoctors().stream()
                         .filter(d -> d.getName().equalsIgnoreCase(username) || d.getName().equalsIgnoreCase("Dr. " + username))
                         .findFirst();
                 
-                // Link them now for future requests
                 if (doctorOpt.isPresent()) {
                     Doctor d = doctorOpt.get();
                     if (d.getUser() == null) {
@@ -131,7 +129,6 @@ public class AuthController {
 
         try {
             if (role == Role.PATIENT) {
-                // Validate age for patients - must be at least 18 years old
                 if (request.getAge() != null) {
                     java.time.LocalDate today = java.time.LocalDate.now();
                     java.time.Period period = java.time.Period.between(request.getAge(), today);
@@ -162,14 +159,12 @@ public class AuthController {
                     if (serviceOpt.isPresent()) {
                         doctor.setMedicalService(serviceOpt.get());
                     } else {
-                        // Fallback to first available service
                         List<MedicalService> services = medicalServiceRepository.findAll();
                         if (!services.isEmpty()) {
                             doctor.setMedicalService(services.get(0));
                         }
                     }
                 } else {
-                    // Fallback to first available service
                     List<MedicalService> services = medicalServiceRepository.findAll();
                     if (!services.isEmpty()) {
                         doctor.setMedicalService(services.get(0));

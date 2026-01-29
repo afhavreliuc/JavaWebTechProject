@@ -13,8 +13,8 @@ import java.util.Optional;
 public class PaymentTypeService {
 
     private final PaymentTypeRepository paymentTypeRepository;
-    private final MedicalServiceService medicalServiceService;  // Assuming you have a service for MedicalService
-    private final PatientService patientService;  // Assuming you have a service for Patient
+    private final MedicalServiceService medicalServiceService;
+    private final PatientService patientService;
 
     @Autowired
     public PaymentTypeService(PaymentTypeRepository paymentTypeRepository,
@@ -50,7 +50,6 @@ public class PaymentTypeService {
                 if (paymentType.isPresent()) return paymentType;
             }
 
-            // Fallback to standard price
             return paymentTypeRepository.findByMedicalServiceIdAndWithInsuranceAndWithSubscription(medicalService.getId(), false, false);
         }
         return Optional.empty();

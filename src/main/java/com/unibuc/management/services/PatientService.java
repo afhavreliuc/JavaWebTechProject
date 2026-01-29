@@ -53,10 +53,8 @@ public class PatientService {
             Patient patient = patientOpt.get();
             User user = patient.getUser();
             
-            // Delete the patient first
             patientRepository.deleteById(id);
             
-            // Delete the associated user account if it exists
             if (user != null) {
                 userRepository.delete(user);
             }

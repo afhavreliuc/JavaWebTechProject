@@ -9,7 +9,6 @@ public class RegisterRequest {
     private String fullName;
     private LocalDate age;
     private Boolean sex;
-    // Doctor-specific fields
     private String office;
     private Integer numberOfPTOdays;
     private Integer medicalServiceId;

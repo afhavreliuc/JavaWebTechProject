@@ -31,7 +31,6 @@ public class DataSourceConfig {
     @Bean(name = "dwDataSource")
     public DataSource dwDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        // H2 uses 'url' not 'jdbc-url' for DriverManagerDataSource
         String jdbcUrl = env.getProperty("spring.dw-datasource.jdbc-url");
         if (jdbcUrl == null) {
             jdbcUrl = env.getProperty("spring.dw-datasource.url");
